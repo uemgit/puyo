@@ -237,6 +237,21 @@
             100% { transform: scale(0.1); filter: brightness(2); opacity: 0; }
         }
 
+        /* 落下中の回転軸を明滅させるアニメーション */
+        .axis-glow {
+            display: none;
+        }
+
+        .axis-puyo .axis-glow {
+            display: block;
+            animation: axisGlowAnim 0.6s infinite alternate ease-in-out;
+        }
+
+        @keyframes axisGlowAnim {
+            0% { opacity: 0.3; stroke-width: 1.5; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.6)); }
+            100% { opacity: 1; stroke-width: 3; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1)); }
+        }
+
         .chain-num-popup {
             position: absolute;
             transform: translate(-50%, -50%);
@@ -543,6 +558,8 @@
                         </radialGradient>
                     </defs>
                     <circle cx="22.5" cy="22.5" r="20" fill="url(#${uid})" stroke="${theme.stroke}" stroke-width="1.5" />
+                    <!-- 落下中メインぷよ用の明滅輪郭 -->
+                    <circle cx="22.5" cy="22.5" r="21" fill="none" stroke="#ffffff" class="axis-glow" />
                     <ellipse cx="15" cy="10" rx="8" ry="4" fill="#ffffff" opacity="0.4" transform="rotate(-25 15 10)" />
                     ${isGhost ? '' : centeredEyesHTML}
                 </svg>
@@ -909,14 +926,23 @@
                 currentIds.add(aMainDomId); currentIds.add(aSubDomId);
 
                 let aMain = document.getElementById(aMainDomId);
-                if (!aMain) { aMain = document.createElement('div'); aMain.id = aMainDomId; aMain.className = 'puyo-item'; layer.appendChild(aMain); }
-                aMain.innerHTML = createPuyoSVG(activePiece.main.color);
+                if (!aMain) { 
+                    aMain = document.createElement('div'); 
+                    aMain.id = aMainDomId; 
+                    layer.appendChild(aMain); 
+                    aMain.innerHTML = createPuyoSVG(activePiece.main.color);
+                }
                 
                 let aSub = document.getElementById(aSubDomId);
-                if (!aSub) { aSub = document.createElement('div'); aSub.id = aSubDomId; aSub.className = 'puyo-item'; layer.appendChild(aSub); }
-                aSub.innerHTML = createPuyoSVG(activePiece.sub.color);
+                if (!aSub) { 
+                    aSub = document.createElement('div'); 
+                    aSub.id = aSubDomId; 
+                    layer.appendChild(aSub); 
+                    aSub.innerHTML = createPuyoSVG(activePiece.sub.color);
+                }
 
-                aMain.className = 'puyo-item' + (isFalling ? ' falling' : '');
+                // 落下中のメインぷよに明滅用のクラスを追加
+                aMain.className = 'puyo-item axis-puyo' + (isFalling ? ' falling' : '');
                 aSub.className = 'puyo-item' + (isFalling ? ' falling' : ' rotating');
 
                 // Render main and sub Puyos with explicit distinct positions
@@ -964,9 +990,17 @@
             const dyTotal = t.clientY - touchStartY;
             const dxStep = t.clientX - touchLastX;
 
+            // 下フリック（即時落下）
             if (dyTotal > 35 && !hasSwiped) {
                 hasSwiped = true;
                 dropPiece();
+                return;
+            }
+
+            // 上フリック（戻す / Undo）
+            if (dyTotal < -35 && !hasSwiped) {
+                hasSwiped = true;
+                undo();
                 return;
             }
 
