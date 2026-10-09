@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Puyo Chain Practice</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+        }
+
+        :root {
+            --bg-dark-1: #0f172a;
+            --bg-dark-2: #1e1b4b;
+            /* Dynamically scale cell size to maximize 6x13 grid on viewport */
+            --cell-size: min(calc((100vw - 150px) / 6), calc((100dvh - 24px) / 13.2), 68px);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--bg-dark-1) 0%, var(--bg-dark-2) 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #f8fafc;
+        }
+
+        .app-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+            position: relative;
+        }
+
+        .stage-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            height: 100%;
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        /* Left side buttons with increased vertical separation (Reset top, Undo below) */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 40px; /* Generous gap between Reset and Undo to prevent mis-taps */
+            width: 65px;
+            height: calc(var(--cell-size) * 13 + 4px);
+            flex-shrink: 0;
+            z-index: 30;
+            padding-top: 4px;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 75px;
+            height: calc(var(--cell-size) * 13 + 4px);
+            flex-shrink: 0;
+            pointer-events: none;
+            z-index: 30;
+        }
+
+        .right-top, .right-bottom {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            pointer-events: auto;
+        }
+
+        .panel-box {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 6px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        .panel-lbl {
+            font-size: 10px;
+            font-weight: 800;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .stat-val {
+            font-size: clamp(16px, 2.5vh, 22px);
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .max-val { color: #fbbf24; }
+        .curr-val { color: #38bdf8; }
+
+        .side-act-btn {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            font-weight: 800;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+            transition: transform 0.08s, background 0.15s;
+            pointer-events: auto;
+        }
+
+        .side-act-btn:active { transform: scale(0.92); }
+        .side-act-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .btn-reset {
+            background: linear-gradient(180deg, #f43f5e 0%, #be123c 100%);
+            padding: 12px 0;
+            font-size: 11px;
+            border: 1px solid #fecdd3;
+        }
+
+        .btn-undo {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            padding: 14px 0;
+            font-size: 13px;
+            font-weight: 900;
+            border: 1px solid #fef08a;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.45);
+        }
+
+        .board {
+            position: relative;
+            width: calc(var(--cell-size) * 6 + 4px);
+            height: calc(var(--cell-size) * 13 + 4px);
+            background: #0f172a;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.8);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .grid-layer {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(13, 1fr);
+            pointer-events: none;
+        }
+
+        .grid-cell {
+            border-right: 1px solid rgba(255, 255, 255, 0.07);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .grid-cell:nth-child(6n) { border-right: none; }
+        .grid-cell:nth-last-child(-n+6) { border-bottom: none; }
+
+        .death-line {
+            position: absolute;
+            top: calc(var(--cell-size) * 1);
+            left: 0;
+            right: 0;
+            height: 0;
+            border-top: 2px dashed #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.9);
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        #puyoLayer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .puyo-item {
+            position: absolute;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            padding: 1px;
+            will-change: left, top, transform;
+            transition: left 0.08s ease-out, top 0.08s ease-out;
+            z-index: 10;
+        }
+
+        .puyo-item.falling {
+            transition: top 0.2s cubic-bezier(0.4, 0.0, 0.2, 1), left 0.08s ease-out;
+        }
+
+        .puyo-item.ghost {
+            opacity: 0.3;
+            filter: saturate(0.5);
+            z-index: 5;
+        }
+
+        .puyo-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center center;
+        }
+
+        .puyo-pop .puyo-inner {
+            animation: slowPopAnim 1.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        @keyframes slowPopAnim {
+            0% { transform: scale(1); filter: brightness(1); opacity: 1; }
+            30% { transform: scale(1.15); filter: brightness(1.5); opacity: 1; }
+            100% { transform: scale(0.1); filter: brightness(2); opacity: 0; }
+        }
+
+        .chain-num-popup {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font-size: clamp(28px, 5vh, 42px);
+            font-weight: 900;
+            color: #fef08a;
+            text-shadow: 0 0 6px #000, 0 0 12px #ca8a04, 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            z-index: 50;
+            pointer-events: none;
+            animation: floatChainNum 1.0s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
+        }
+
+        @keyframes floatChainNum {
+            0% { transform: translate(-50%, -20%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            80% { transform: translate(-50%, -70%) scale(1.0); opacity: 1; }
+            100% { transform: translate(-50%, -90%) scale(0.8); opacity: 0; }
+        }
+
+        .preview-box {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 6px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            width: 100%;
+        }
+
+        /* NEXT size: Exact main field cell size (100%) */
+        .puyo-preview-cell-next { 
+            width: var(--cell-size); 
+            height: var(--cell-size); 
+        }
+
+        /* NEXT2 size: Slightly smaller (~85%) */
+        .puyo-preview-cell-next2 { 
+            width: calc(var(--cell-size) * 0.85); 
+            height: calc(var(--cell-size) * 0.85); 
+        }
+
+        .tap-guide-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.1;
+        }
+        .tap-zone-left { width: 50%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.3); }
+        .tap-zone-right { width: 50%; height: 100%; }
+
+        .game-over-mask {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+            border-radius: 8px;
+            gap: 16px;
+        }
+        .game-over-mask.hidden { display: none; }
+        .game-over-text { font-size: 24px; font-weight: 900; color: #f43f5e; letter-spacing: 2px; }
+
+        /* Modal Dialog Styling */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            width: 85%;
+            max-width: 320px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            transform: scale(0.9);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #f8fafc;
+            text-align: center;
+        }
+
+        .modal-desc {
+            font-size: 13px;
+            color: #94a3b8;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .modal-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .modal-choice-btn {
+            width: 100%;
+            padding: 12px 0;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 800;
+            color: #ffffff;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .modal-choice-btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-mode-4 {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border: 1px solid #60a5fa;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-mode-5 {
+            background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+            border: 1px solid #c084fc;
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+        }
+
+        .modal-cancel-btn {
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="stage-area">
+            <!-- Left Panel: Reset at top, Undo below with wide 40px gap -->
+            <div class="left-panel">
+                <button class="side-act-btn btn-reset" onclick="openResetModal()">
+                    <span>↻ リセット</span>
+                </button>
+                <button id="undoBtn" class="side-act-btn btn-undo" onclick="undo()">
+                    <span>↩ 戻す</span>
+                </button>
+            </div>
+
+            <!-- Main Playfield Grid -->
+            <div id="boardContainer" class="board">
+                <div class="tap-guide-overlay">
+                    <div class="tap-zone-left"></div>
+                    <div class="tap-zone-right"></div>
+                </div>
+                <div class="grid-layer" id="gridBg"></div>
+                <div class="death-line"></div>
+                <div id="puyoLayer"></div>
+                <div id="gameOverMask" class="game-over-mask hidden">
+                    <div class="game-over-text">ばたんきゅ〜</div>
+                    <button class="side-act-btn btn-reset" style="padding: 10px 20px; font-size: 14px; width: auto;" onclick="openResetModal()">やり直す</button>
+                </div>
+            </div>
+
+            <!-- Right Panel: NEXT & Swapped Stats (MAX on TOP, CHAIN on BOTTOM) -->
+            <div class="right-panel">
+                <div class="right-top">
+                    <div class="panel-box">
+                        <span class="panel-lbl">NEXT</span>
+                        <div class="preview-box">
+                            <div id="next1Sub" class="puyo-preview-cell-next"></div>
+                            <div id="next1Main" class="puyo-preview-cell-next"></div>
+                        </div>
+                    </div>
+                    <div class="panel-box" style="opacity: 0.9;">
+                        <span class="panel-lbl">NEXT2</span>
+                        <div class="preview-box">
+                            <div id="next2Sub" class="puyo-preview-cell-next2"></div>
+                            <div id="next2Main" class="puyo-preview-cell-next2"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Swapped Stats Section -->
+                <div class="right-bottom">
+                    <div class="panel-box">
+                        <span class="panel-lbl">MAX</span>
+                        <span id="maxChainDisp" class="stat-val max-val">0</span>
+                    </div>
+                    <div class="panel-box">
+                        <span class="panel-lbl">CHAIN</span>
+                        <span id="currChainDisp" class="stat-val curr-val">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Mode Selection Modal -->
+    <div id="resetModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title">色数の選択</div>
+            <div class="modal-desc">練習する色数を選択して盤面をリセットします。</div>
+            <div class="modal-btn-group">
+                <button class="modal-choice-btn btn-mode-4" onclick="confirmReset(4)">4色モード（推奨）</button>
+                <button class="modal-choice-btn btn-mode-5" onclick="confirmReset(5)">5色モード</button>
+            </div>
+            <button class="modal-cancel-btn" onclick="closeResetModal()">キャンセル</button>
+        </div>
+    </div>
+
+    <script>
+        const COLS = 6;
+        const ROWS = 13; 
+
+        // Master color definitions with updated Sky Blue / Cyan (#00d4ff) & Lemon Yellow (#ffee33 / #ffd700)
+        const MASTER_PUYO_THEMES = {
+            1: { start: '#ef4444', end: '#b91c1c', stroke: '#7f1d1d' }, // Red
+            2: { start: '#00d4ff', end: '#0284c7', stroke: '#0369a1' }, // Bright Sky Blue / Cyan
+            3: { start: '#22c55e', end: '#15803d', stroke: '#14532d' }, // Green
+            4: { start: '#ffee33', end: '#ffd700', stroke: '#b45309' }, // Bright Yellow
+            5: { start: '#a855f7', end: '#7e22ce', stroke: '#581c87' }  // Purple
+        };
+
+        const ROTATIONS = [
+            { dx: 0, dy: -1 }, // 0: Up
+            { dx: 1, dy: 0 },  // 1: Right
+            { dx: 0, dy: 1 },  // 2: Down
+            { dx: -1, dy: 0 }  // 3: Left
+        ];
+
+        let activeColorPalette = [1, 2, 3, 4];
+        let board = [];
+        let puyoQueue = [];
+        let activePiece = null;
+        let historyStack = [];
+        let maxChainCount = 0; 
+        let currentColorCount = 4; // Default 4 colors
+        let isAnimating = false;
+        let isGameOver = false;
+        let nextPuyoId = 1;
+
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        function createPuyoSVG(colorIndex, isGhost = false) {
+            if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
+            const theme = MASTER_PUYO_THEMES[colorIndex];
+            const uid = 'grad_' + colorIndex + '_' + Math.random().toString(36).substr(2, 5);
+
+            // Spaced eyes with strictly centered pupils
+            const centeredEyesHTML = `
+                <!-- Whites of eyes spaced apart -->
+                <circle cx="15.5" cy="22" r="6.8" fill="#ffffff" />
+                <circle cx="29.5" cy="22" r="6.8" fill="#ffffff" />
+                <!-- Center Pupils (Centered: 15.5 & 29.5) -->
+                <circle cx="15.5" cy="22" r="3" fill="#0f172a" />
+                <circle cx="29.5" cy="22" r="3" fill="#0f172a" />
+                <!-- Highlights -->
+                <circle cx="17" cy="20" r="1.5" fill="#ffffff" />
+                <circle cx="31" cy="20" r="1.5" fill="#ffffff" />
+            `;
+
+            return `<div class="puyo-inner">
+                <svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block;">
+                    <defs>
+                        <radialGradient id="${uid}" cx="35%" cy="30%" r="65%">
+                            <stop offset="0%" stop-color="${theme.start}" />
+                            <stop offset="80%" stop-color="${theme.end}" />
+                            <stop offset="100%" stop-color="${theme.stroke}" />
+                        </radialGradient>
+                    </defs>
+                    <circle cx="22.5" cy="22.5" r="20" fill="url(#${uid})" stroke="${theme.stroke}" stroke-width="1.5" />
+                    <ellipse cx="15" cy="10" rx="8" ry="4" fill="#ffffff" opacity="0.4" transform="rotate(-25 15 10)" />
+                    ${isGhost ? '' : centeredEyesHTML}
+                </svg>
+            </div>`;
+        }
+
+        function initGrid() {
+            const gridBg = document.getElementById('gridBg');
+            gridBg.innerHTML = '';
+            for (let i = 0; i < ROWS * COLS; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                gridBg.appendChild(cell);
+            }
+        }
+
+        function initBoard() {
+            board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+            initGrid();
+        }
+
+        function pickColorPalette() {
+            const allColors = [1, 2, 3, 4, 5];
+            if (currentColorCount === 5) {
+                activeColorPalette = allColors;
+            } else {
+                // Randomly pick 4 colors out of 5 on reset in 4-color mode
+                const shuffled = [...allColors].sort(() => Math.random() - 0.5);
+                activeColorPalette = shuffled.slice(0, 4);
+            }
+        }
+
+        function generatePiece() { 
+            const randMain = activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)];
+            const randSub = activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)];
+            return { main: randMain, sub: randSub }; 
+        }
+
+        function refillQueue() { 
+            while (puyoQueue.length < 3) puyoQueue.push(generatePiece()); 
+        }
+
+        function openResetModal() {
+            document.getElementById('resetModal').classList.add('active');
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').classList.remove('active');
+        }
+
+        function confirmReset(selectedColors) {
+            closeResetModal();
+            currentColorCount = selectedColors;
+            startGame();
+        }
+
+        function startGame() {
+            pickColorPalette();
+            initBoard();
+            document.getElementById('puyoLayer').innerHTML = '';
+            puyoQueue = [];
+            historyStack = [];
+            isGameOver = false;
+            isAnimating = false;
+            updateScoreUI(0);
+            document.getElementById('gameOverMask').classList.add('hidden');
+            updateUndoBtn();
+            refillQueue();
+            spawnPiece();
+            render();
+        }
+
+        function spawnPiece() {
+            refillQueue();
+            const next = puyoQueue.shift();
+            refillQueue();
+            activePiece = {
+                x: 2, y: 1, rot: 0, angle: 0,
+                main: { color: next.main, id: nextPuyoId++ },
+                sub: { color: next.sub, id: nextPuyoId++ }
+            };
+            if (board[activePiece.y][activePiece.x] !== null) {
+                isGameOver = true;
+                activePiece = null;
+                document.getElementById('gameOverMask').classList.remove('hidden');
+            }
+        }
+
+        function getSubPos(piece) { 
+            return { x: piece.x + ROTATIONS[piece.rot].dx, y: piece.y + ROTATIONS[piece.rot].dy }; 
+        }
+
+        function isValidPos(x, y) {
+            if (x < 0 || x >= COLS || y >= ROWS) return false;
+            if (y >= 0 && board[y][x] !== null) return false;
+            return true;
+        }
+
+        function canPlacePiece(piece) { 
+            return isValidPos(piece.x, piece.y) && isValidPos(getSubPos(piece).x, getSubPos(piece).y); 
+        }
+
+        function movePiece(dx) {
+            if (isAnimating || isGameOver || !activePiece) return;
+            const test = { ...activePiece, x: activePiece.x + dx };
+            if (canPlacePiece(test)) { activePiece = test; render(); }
+        }
+
+        function rotatePiece(dir) {
+            if (isAnimating || isGameOver || !activePiece) return;
+            let newRot = (activePiece.rot + dir + 4) % 4;
+            let newAngle = activePiece.angle + (dir * 90);
+            let test = { ...activePiece, rot: newRot, angle: newAngle };
+
+            if (canPlacePiece(test)) {
+                activePiece = test;
+            } else {
+                let kickR = { ...test, x: test.x + 1 }, kickL = { ...test, x: test.x - 1 }, kickU = { ...test, y: test.y - 1 };
+                if (canPlacePiece(kickR)) activePiece = kickR;
+                else if (canPlacePiece(kickL)) activePiece = kickL;
+                else if (canPlacePiece(kickU)) activePiece = kickU;
+            }
+            render();
+        }
+
+        function saveState() {
+            historyStack.push({
+                board: board.map(r => r.map(c => c ? { ...c } : null)),
+                puyoQueue: JSON.parse(JSON.stringify(puyoQueue)),
+                activeColorPalette: [...activeColorPalette],
+                maxChainCount: maxChainCount,
+                activePiece: activePiece ? {
+                    x: activePiece.x, y: activePiece.y, rot: activePiece.rot, angle: activePiece.angle,
+                    main: { ...activePiece.main }, sub: { ...activePiece.sub }
+                } : null
+            });
+            updateUndoBtn();
+        }
+
+        function undo() {
+            if (isAnimating || historyStack.length === 0) return;
+            const prev = historyStack.pop();
+            board = prev.board.map(r => r.map(c => c ? { ...c } : null));
+            puyoQueue = prev.puyoQueue;
+            activeColorPalette = prev.activeColorPalette;
+            maxChainCount = prev.maxChainCount;
+            activePiece = prev.activePiece ? { ...prev.activePiece } : null;
+
+            isGameOver = false;
+            document.getElementById('gameOverMask').classList.add('hidden');
+            document.getElementById('puyoLayer').innerHTML = '';
+            
+            updateScoreUI(0);
+            updateUndoBtn();
+            render();
+        }
+
+        function updateUndoBtn() { 
+            document.getElementById('undoBtn').disabled = (historyStack.length === 0); 
+        }
+
+        async function dropPiece() {
+            if (isAnimating || isGameOver || !activePiece) return;
+            isAnimating = true;
+            saveState();
+
+            let dist = 0;
+            while (true) {
+                let test = { ...activePiece, y: activePiece.y + dist + 1 };
+                if (canPlacePiece(test)) dist++;
+                else break;
+            }
+
+            activePiece.y += dist;
+            render(true);
+            await sleep(200);
+
+            const sub = getSubPos(activePiece);
+            if (activePiece.y >= 0) board[activePiece.y][activePiece.x] = { ...activePiece.main, isPopping: false };
+            if (sub.y >= 0) board[sub.y][sub.x] = { ...activePiece.sub, isPopping: false };
+
+            activePiece = null;
+            render();
+            await resolveChains();
+        }
+
+        async function applyGravity() {
+            let moved = false;
+            for (let x = 0; x < COLS; x++) {
+                let writeY = ROWS - 1;
+                for (let y = ROWS - 1; y >= 0; y--) {
+                    if (board[y][x]) {
+                        if (writeY !== y) {
+                            board[writeY][x] = board[y][x];
+                            board[y][x] = null;
+                            moved = true;
+                        }
+                        writeY--;
+                    }
+                }
+            }
+            if (moved) {
+                render(true);
+                await sleep(200);
+            }
+            return moved;
+        }
+
+        function findMatches() {
+            let visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+            let toErase = [];
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    let cell = board[y][x];
+                    if (cell && !visited[y][x]) {
+                        let group = [];
+                        let queue = [{ x, y }];
+                        visited[y][x] = true;
+                        while (queue.length > 0) {
+                            let curr = queue.shift();
+                            group.push(curr);
+                            [[0,1], [0,-1], [1,0], [-1,0]].forEach(([dx, dy]) => {
+                                let nx = curr.x + dx, ny = curr.y + dy;
+                                if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+                                    if (!visited[ny][nx] && board[ny][nx] && board[ny][nx].color === cell.color) {
+                                        visited[ny][nx] = true;
+                                        queue.push({ x: nx, y: ny });
+                                    }
+                                }
+                            });
+                        }
+                        if (group.length >= 4) toErase = toErase.concat(group);
+                    }
+                }
+            }
+            return toErase;
+        }
+
+        async function resolveChains() {
+            isAnimating = true;
+            let currentChain = 0;
+
+            await applyGravity();
+
+            while (true) {
+                let matches = findMatches();
+                if (matches.length === 0) break;
+
+                currentChain++;
+                if (currentChain > maxChainCount) maxChainCount = currentChain;
+                updateScoreUI(currentChain);
+
+                let sumX = 0, sumY = 0;
+                for (let pos of matches) {
+                    sumX += pos.x; sumY += pos.y;
+                    board[pos.y][pos.x].isPopping = true;
+                }
+                
+                render();
+                showChainPopup(sumX / matches.length, sumY / matches.length, currentChain);
+
+                await sleep(1000);
+
+                for (let pos of matches) {
+                    if (board[pos.y][pos.x]) {
+                        let id = board[pos.y][pos.x].id;
+                        let el = document.getElementById('puyo-' + id);
+                        if (el) el.remove();
+                        board[pos.y][pos.x] = null;
+                    }
+                }
+                
+                render();
+                await applyGravity();
+            }
+
+            isAnimating = false;
+            if (!isGameOver) {
+                spawnPiece();
+                render();
+            }
+        }
+
+        function showChainPopup(gridX, gridY, chainNumber) {
+            const layer = document.getElementById('puyoLayer');
+            const popup = document.createElement('div');
+            popup.className = 'chain-num-popup';
+            popup.innerText = `${chainNumber}`;
+            
+            popup.style.left = `clamp(20px, calc(var(--cell-size) * ${gridX + 0.5}), calc(var(--cell-size) * 6 - 20px))`;
+            popup.style.top = `clamp(20px, calc(var(--cell-size) * ${gridY + 0.5}), calc(var(--cell-size) * 13 - 20px))`;
+            layer.appendChild(popup);
+            setTimeout(() => { if (popup.parentNode) popup.remove(); }, 1000);
+        }
+
+        function updateScoreUI(current) {
+            document.getElementById('currChainDisp').innerText = current;
+            document.getElementById('maxChainDisp').innerText = maxChainCount;
+        }
+
+        function render(isFalling = false) {
+            const layer = document.getElementById('puyoLayer');
+            const currentIds = new Set();
+
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    if (board[y][x]) {
+                        const item = board[y][x];
+                        const domId = 'puyo-' + item.id;
+                        currentIds.add(domId);
+                        let el = document.getElementById(domId);
+                        if (!el) {
+                            el = document.createElement('div');
+                            el.id = domId;
+                            el.className = 'puyo-item';
+                            el.innerHTML = createPuyoSVG(item.color);
+                            layer.appendChild(el);
+                        }
+                        el.className = 'puyo-item' + (isFalling ? ' falling' : '');
+                        el.style.left = `calc(var(--cell-size) * ${x})`;
+                        el.style.top = `calc(var(--cell-size) * ${y})`;
+                        el.style.transform = 'none';
+
+                        if (item.isPopping) el.classList.add('puyo-pop');
+                    }
+                }
+            }
+
+            if (activePiece) {
+                const subPos = getSubPos(activePiece);
+
+                if (!isAnimating) {
+                    let ghostDrop = 0;
+                    while (true) {
+                        let test = { ...activePiece, y: activePiece.y + ghostDrop + 1 };
+                        if (canPlacePiece(test)) ghostDrop++; else break;
+                    }
+                    
+                    const gMainId = 'ghost-main', gSubId = 'ghost-sub';
+                    currentIds.add(gMainId); currentIds.add(gSubId);
+
+                    let gMain = document.getElementById(gMainId);
+                    if (!gMain) { gMain = document.createElement('div'); gMain.id = gMainId; gMain.className = 'puyo-item ghost'; layer.appendChild(gMain); }
+                    gMain.innerHTML = createPuyoSVG(activePiece.main.color, true);
+
+                    let gSub = document.getElementById(gSubId);
+                    if (!gSub) { gSub = document.createElement('div'); gSub.id = gSubId; gSub.className = 'puyo-item ghost'; layer.appendChild(gSub); }
+                    gSub.innerHTML = createPuyoSVG(activePiece.sub.color, true);
+
+                    const gy = activePiece.y + ghostDrop;
+                    const gSubY = subPos.y + ghostDrop;
+
+                    gMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`;
+                    gMain.style.top = `calc(var(--cell-size) * ${gy})`;
+                    gMain.style.transform = 'none';
+
+                    gSub.style.left = `calc(var(--cell-size) * ${subPos.x})`;
+                    gSub.style.top = `calc(var(--cell-size) * ${gSubY})`;
+                    gSub.style.transform = 'none';
+                }
+
+                const aMainDomId = 'puyo-' + activePiece.main.id;
+                const aSubDomId = 'puyo-' + activePiece.sub.id;
+                currentIds.add(aMainDomId); currentIds.add(aSubDomId);
+
+                let aMain = document.getElementById(aMainDomId);
+                if (!aMain) { aMain = document.createElement('div'); aMain.id = aMainDomId; aMain.className = 'puyo-item'; layer.appendChild(aMain); }
+                aMain.innerHTML = createPuyoSVG(activePiece.main.color);
+                
+                let aSub = document.getElementById(aSubDomId);
+                if (!aSub) { aSub = document.createElement('div'); aSub.id = aSubDomId; aSub.className = 'puyo-item'; layer.appendChild(aSub); }
+                aSub.innerHTML = createPuyoSVG(activePiece.sub.color);
+
+                aMain.className = 'puyo-item' + (isFalling ? ' falling' : '');
+                aSub.className = 'puyo-item' + (isFalling ? ' falling' : ' rotating');
+
+                // Render main and sub Puyos with explicit distinct positions
+                aMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`;
+                aMain.style.top = `calc(var(--cell-size) * ${activePiece.y})`;
+                aMain.style.transform = 'none';
+
+                aSub.style.left = `calc(var(--cell-size) * ${subPos.x})`;
+                aSub.style.top = `calc(var(--cell-size) * ${subPos.y})`;
+                aSub.style.transform = 'none';
+            }
+
+            Array.from(layer.children).forEach(el => {
+                if (!el.classList.contains('chain-num-popup') && !currentIds.has(el.id)) el.remove();
+            });
+
+            if (puyoQueue.length >= 2) {
+                document.getElementById('next1Main').innerHTML = createPuyoSVG(puyoQueue[0].main);
+                document.getElementById('next1Sub').innerHTML = createPuyoSVG(puyoQueue[0].sub);
+                document.getElementById('next2Main').innerHTML = createPuyoSVG(puyoQueue[1].main);
+                document.getElementById('next2Sub').innerHTML = createPuyoSVG(puyoQueue[1].sub);
+            }
+        }
+
+        let touchStartX = 0, touchStartY = 0, touchLastX = 0;
+        let touchStartTime = 0;
+        let isGameGesture = false, hasSwiped = false;
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.left-panel, .right-panel, button, .modal-card')) {
+                isGameGesture = false; return;
+            }
+            isGameGesture = true;
+            hasSwiped = false;
+            const t = e.touches[0];
+            touchStartX = touchLastX = t.clientX;
+            touchStartY = t.clientY;
+            touchStartTime = Date.now();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isGameGesture) return;
+            e.preventDefault(); 
+            const t = e.touches[0];
+            const dyTotal = t.clientY - touchStartY;
+            const dxStep = t.clientX - touchLastX;
+
+            if (dyTotal > 35 && !hasSwiped) {
+                hasSwiped = true;
+                dropPiece();
+                return;
+            }
+
+            const cellWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) || 40;
+            if (Math.abs(dxStep) >= cellWidth * 0.5) {
+                hasSwiped = true;
+                if (dxStep < 0) movePiece(-1);
+                else if (dxStep > 0) movePiece(1);
+                touchLastX = t.clientX;
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!isGameGesture) return;
+            const dt = Date.now() - touchStartTime;
+            const t = e.changedTouches[0];
+            const dxTotal = t.clientX - touchStartX;
+            const dyTotal = t.clientY - touchStartY;
+
+            if (!hasSwiped && Math.abs(dxTotal) < 15 && Math.abs(dyTotal) < 15 && dt < 300) {
+                if (t.clientX < window.innerWidth / 2) rotatePiece(-1);
+                else rotatePiece(1);
+            }
+            isGameGesture = false;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (["a", "A", "d", "D", "s", "S", "q", "Q", "e", "E", "/", "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp"].includes(e.key)) {
+                e.preventDefault();
+            }
+            switch(e.key) {
+                case 'a': case 'A': case 'ArrowLeft': movePiece(-1); break;
+                case 'd': case 'D': case 'ArrowRight': movePiece(1); break;
+                case 's': case 'S': case 'ArrowDown': dropPiece(); break;
+                case 'q': case 'Q': case '/': rotatePiece(-1); break;
+                case 'e': case 'E': case 'ArrowUp': rotatePiece(1); break;
+            }
+        });
+
+        window.onload = startGame;
+    </script>
+</body>
+</html>
