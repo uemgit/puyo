@@ -347,6 +347,8 @@
             font-size: 15px; font-weight: 800; color: #ffffff; cursor: pointer; transition: transform 0.1s;
         }
         .modal-choice-btn:active { transform: scale(0.96); }
+        
+        .btn-mode-3 { background: linear-gradient(135deg, #10b981 0%, #047857 100%); border: 1px solid #34d399; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
         .btn-mode-4 { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: 1px solid #60a5fa; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
         .btn-mode-5 { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); border: 1px solid #c084fc; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4); }
         .modal-cancel-btn { background: transparent; border: none; color: #64748b; font-size: 13px; font-weight: 700; cursor: pointer; padding: 4px 8px; }
@@ -417,8 +419,9 @@
             <div class="modal-title">色数の選択</div>
             <div class="modal-desc">練習する色数を選択して盤面をリセットします。</div>
             <div class="modal-btn-group">
-                <button class="modal-choice-btn btn-mode-4" onclick="confirmReset(4)">4色モード（推奨）</button>
-                <button class="modal-choice-btn btn-mode-5" onclick="confirmReset(5)">5色モード</button>
+                <button class="modal-choice-btn btn-mode-3" onclick="confirmReset(3)">甘口（3色）</button>
+                <button class="modal-choice-btn btn-mode-4" onclick="confirmReset(4)">中辛（4色）</button>
+                <button class="modal-choice-btn btn-mode-5" onclick="confirmReset(5)">辛口（5色）</button>
             </div>
             <button class="modal-cancel-btn" onclick="closeResetModal()">キャンセル</button>
         </div>
@@ -443,18 +446,17 @@
             { dx: -1, dy: 0 }  
         ];
 
-        let activeColorPalette = [1, 2, 3, 4];
+        let activeColorPalette = [];
         let board = [];
         let puyoQueue = [];
         let activePiece = null;
         let historyStack = [];
         let maxChainCount = 0; 
-        let currentColorCount = 4; 
+        let currentColorCount = 4; // デフォルトは中辛（4色）
         let isAnimating = false;
         let isGameOver = false;
         let nextPuyoId = 1;
         
-        // 着地後0.2秒が経過していない「未結合」ぷよのIDを管理するSet
         let unconnectedIds = new Set();
 
         const sleep = ms => new Promise(res => setTimeout(res, ms));
@@ -533,8 +535,9 @@
             if (currentColorCount === 5) {
                 activeColorPalette = allColors;
             } else {
+                // 3色または4色の場合は、全5色から毎回ランダムに選択
                 const shuffled = [...allColors].sort(() => Math.random() - 0.5);
-                activeColorPalette = shuffled.slice(0, 4);
+                activeColorPalette = shuffled.slice(0, currentColorCount);
             }
         }
 
