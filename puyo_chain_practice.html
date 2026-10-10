@@ -535,7 +535,6 @@
             if (currentColorCount === 5) {
                 activeColorPalette = allColors;
             } else {
-                // 3色または4色の場合は、全5色から毎回ランダムに選択
                 const shuffled = [...allColors].sort(() => Math.random() - 0.5);
                 activeColorPalette = shuffled.slice(0, currentColorCount);
             }
@@ -721,6 +720,8 @@
                 }
             }
             if (movedIds.length > 0) {
+                // 落下アニメーション開始前に、落下するぷよを未結合リストに登録
+                movedIds.forEach(id => unconnectedIds.add(id));
                 render(true);
                 await sleep(200);
             }
@@ -763,7 +764,6 @@
 
             let movedIds = await applyGravity();
             if (movedIds.length > 0) {
-                movedIds.forEach(id => unconnectedIds.add(id));
                 render();
                 await sleep(200);
                 movedIds.forEach(id => unconnectedIds.delete(id));
@@ -801,7 +801,6 @@
                 render();
                 movedIds = await applyGravity();
                 if (movedIds.length > 0) {
-                    movedIds.forEach(id => unconnectedIds.add(id));
                     render();
                     await sleep(200);
                     movedIds.forEach(id => unconnectedIds.delete(id));
