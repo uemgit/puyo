@@ -125,7 +125,6 @@
         .right-top {
             display: flex;
             flex-direction: column;
-            gap: 4px;
             width: 100%;
             pointer-events: auto;
         }
@@ -140,6 +139,11 @@
             flex-direction: column;
             align-items: center;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin-bottom: 4px;
+        }
+
+        .panel-box-next2 {
+            margin-bottom: 24px; /* 左側のgap(24px)に合わせて間隔を調整 */
         }
 
         .panel-lbl {
@@ -376,7 +380,7 @@
                             <div id="next1Main" class="puyo-preview-cell-next"></div>
                         </div>
                     </div>
-                    <div class="panel-box" style="opacity: 0.9;">
+                    <div class="panel-box panel-box-next2" style="opacity: 0.9;">
                         <span class="panel-lbl">NEXT2</span>
                         <div class="preview-box">
                             <div id="next2Sub" class="puyo-preview-cell-next2"></div>
