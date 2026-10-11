@@ -143,7 +143,7 @@
         }
 
         .panel-box-next2 {
-            margin-bottom: 24px; /* 左側のgap(24px)に合わせて間隔を調整 */
+            margin-bottom: 24px;
         }
 
         .panel-lbl {
@@ -425,16 +425,16 @@
         const COLS = 6;
         const ROWS = 13; 
 
+        // アニメ調マットカラーの定義
         const MASTER_PUYO_THEMES = {
-            1: { start: '#ef4444', end: '#b91c1c', stroke: '#7f1d1d' }, 
-            2: { start: '#00d4ff', end: '#0284c7', stroke: '#0369a1' }, 
-            3: { start: '#22c55e', end: '#15803d', stroke: '#14532d' }, 
-            4: { start: '#ffee33', end: '#ffd700', stroke: '#b45309' }, 
-            5: { start: '#a855f7', end: '#7e22ce', stroke: '#581c87' }  
+            1: { base: '#ef4444', stroke: '#7f1d1d' }, // 赤
+            2: { base: '#0ea5e9', stroke: '#0c4a6e' }, // 青
+            3: { base: '#22c55e', stroke: '#14532d' }, // 緑
+            4: { base: '#eab308', stroke: '#713f12' }, // 黄
+            5: { base: '#a855f7', stroke: '#4c1d95' }  // 紫
         };
 
         const ROTATIONS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
-
         const CHAIN_BONUS_TABLE = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
         
         function getChainBonus(chain) {
@@ -495,35 +495,62 @@
         function createPuyoSVG(colorIndex, isGhost = false, conn = {t:0, r:0, b:0, l:0}) {
             if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
             const theme = MASTER_PUYO_THEMES[colorIndex];
-            const uid = 'grad_' + colorIndex + '_' + Math.random().toString(36).substr(2, 5);
 
+            // 目の配置
             const centeredEyesHTML = `
-                <circle cx="15.5" cy="22" r="6.8" fill="#ffffff" />
-                <circle cx="29.5" cy="22" r="6.8" fill="#ffffff" />
-                <circle cx="15.5" cy="22" r="3" fill="#0f172a" />
-                <circle cx="29.5" cy="22" r="3" fill="#0f172a" />
-                <circle cx="17" cy="20" r="1.5" fill="#ffffff" />
-                <circle cx="31" cy="20" r="1.5" fill="#ffffff" />
+                <circle cx="15.5" cy="25" r="6.5" fill="#ffffff" />
+                <circle cx="29.5" cy="25" r="6.5" fill="#ffffff" />
+                <circle cx="15.5" cy="25" r="3" fill="#0f172a" />
+                <circle cx="29.5" cy="25" r="3" fill="#0f172a" />
+                <circle cx="17" cy="23" r="1.5" fill="#ffffff" />
+                <circle cx="31" cy="23" r="1.5" fill="#ffffff" />
             `;
 
-            let extraShapes = "";
-            if (conn.r) { extraShapes += `<rect x="22.5" y="8.5" width="23.5" height="28" fill="url(#${uid})" /><line x1="36.5" y1="8.5" x2="46" y2="8.5" stroke="${theme.stroke}" stroke-width="1.5" /><line x1="36.5" y1="36.5" x2="46" y2="36.5" stroke="${theme.stroke}" stroke-width="1.5" />`; }
-            if (conn.l) { extraShapes += `<rect x="-1" y="8.5" width="23.5" height="28" fill="url(#${uid})" /><line x1="-1" y1="8.5" x2="8.5" y2="8.5" stroke="${theme.stroke}" stroke-width="1.5" /><line x1="-1" y1="36.5" x2="8.5" y2="36.5" stroke="${theme.stroke}" stroke-width="1.5" />`; }
-            if (conn.t) { extraShapes += `<rect x="8.5" y="-1" width="28" height="23.5" fill="url(#${uid})" /><line x1="8.5" y1="-1" x2="8.5" y2="8.5" stroke="${theme.stroke}" stroke-width="1.5" /><line x1="36.5" y1="-1" x2="36.5" y2="8.5" stroke="${theme.stroke}" stroke-width="1.5" />`; }
-            if (conn.b) { extraShapes += `<rect x="8.5" y="22.5" width="28" height="23.5" fill="url(#${uid})" /><line x1="8.5" y1="36.5" x2="8.5" y2="46" stroke="${theme.stroke}" stroke-width="1.5" /><line x1="36.5" y1="36.5" x2="36.5" y2="46" stroke="${theme.stroke}" stroke-width="1.5" />`; }
+            const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
+
+            // 横長ぷよのベースパス
+            const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
+
+            // 結合部の描画（セル境界での接続幅を完全一致させて段差を解消）
+            let connFill = "";
+            let connStroke = "";
+
+            if (conn.r) {
+                connFill += `<rect x="22.5" y="14" width="24" height="24" fill="${theme.base}" />`;
+                connStroke += `<line x1="37" y1="14" x2="46" y2="14" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+                connStroke += `<line x1="39" y1="38" x2="46" y2="38" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+            }
+            if (conn.l) {
+                connFill += `<rect x="-1" y="14" width="24" height="24" fill="${theme.base}" />`;
+                connStroke += `<line x1="-1" y1="14" x2="8" y2="14" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+                connStroke += `<line x1="-1" y1="38" x2="6" y2="38" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+            }
+            if (conn.b) {
+                connFill += `<rect x="7.5" y="25" width="30" height="21" fill="${theme.base}" />`;
+                connStroke += `<line x1="7.5" y1="36" x2="7.5" y2="46" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+                connStroke += `<line x1="37.5" y1="36" x2="37.5" y2="46" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+            }
+            if (conn.t) {
+                connFill += `<rect x="7.5" y="-1" width="30" height="20" fill="${theme.base}" />`;
+                connStroke += `<line x1="7.5" y1="-1" x2="7.5" y2="10" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+                connStroke += `<line x1="37.5" y1="-1" x2="37.5" y2="10" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+            }
 
             return `<div class="puyo-inner">
                 <svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;">
-                    <defs>
-                        <radialGradient id="${uid}" cx="15.75" cy="13.5" r="29.25" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="${theme.start}" /><stop offset="80%" stop-color="${theme.end}" /><stop offset="100%" stop-color="${theme.stroke}" />
-                        </radialGradient>
-                    </defs>
-                    <circle cx="22.5" cy="22.5" r="20" fill="url(#${uid})" stroke="${theme.stroke}" stroke-width="1.5" />
-                    ${extraShapes}
-                    <circle cx="22.5" cy="22.5" r="21" fill="none" stroke="#ffffff" class="axis-glow" />
-                    <ellipse cx="15" cy="10" rx="8" ry="4" fill="#ffffff" opacity="0.4" transform="rotate(-25 15 10)" />
+                    <!-- 横長ぷよのベース形状 -->
+                    <path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="1.5" stroke-linejoin="round" />
+                    
+                    <!-- 結合部の塗りつぶしと枠線 -->
+                    ${connFill}
+                    ${connStroke}
+                    
+                    <!-- 光沢と目 -->
+                    ${highlightHTML}
                     ${isGhost ? '' : centeredEyesHTML}
+                    
+                    <!-- 軸ぷよのグロウエフェクト -->
+                    <path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" />
                 </svg>
             </div>`;
         }
