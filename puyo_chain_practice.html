@@ -83,9 +83,10 @@
             font-variant-numeric: tabular-nums;
         }
 
-        .score-val.max-val {
-            color: #ff007f;
-            text-shadow: 0 1px 2px #000000, 0 0 10px rgba(255, 0, 127, 0.8);
+        /* 視認性を重視した豪華な黄金色 (HI-SCORE) */
+        .score-val.hi-score-val {
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(255, 215, 0, 0.6), 0 0 2px #3d2314;
         }
 
         .stage-area {
@@ -115,7 +116,7 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
-            width: 52px;
+            width: 54px;
             height: calc(var(--cell-size) * 13 + 10px);
             flex-shrink: 0;
             pointer-events: none;
@@ -134,40 +135,38 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(107, 62, 29, 0.4);
             border-radius: 6px;
-            padding: 3px 2px;
+            padding: 4px 2px;
             display: flex;
             flex-direction: column;
             align-items: center;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .panel-box-next2 {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .panel-lbl {
-            font-size: 8px;
+            font-size: 7.5px;
             font-weight: 800;
             color: #4a270f;
-            letter-spacing: 0.2px;
+            letter-spacing: -0.2px;
             margin-bottom: 2px;
             white-space: nowrap;
         }
 
         .stat-val {
-            font-size: clamp(20px, 3vh, 28px);
+            font-size: clamp(18px, 2.8vh, 24px);
             font-weight: 900;
             line-height: 1;
             font-variant-numeric: tabular-nums;
         }
 
-        .max-val { 
-            color: #ff007f; 
-            text-shadow: 0 1px 2px #000000, 0 0 10px rgba(255, 0, 127, 0.8); 
-        }
         .curr-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
         .ac-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
+        /* 白色 (最大連鎖数) */
+        .max-chain-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
 
         .side-act-btn {
             width: 100%;
@@ -318,7 +317,7 @@
         }
         .modal-overlay.active .modal-card { transform: scale(1); }
         .modal-title { font-size: 18px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
-        .modal-desc { font-size: 13px; color: #fffbeb; text-align: center; line-height: 1.4; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+        .modal-desc { font-size: 13px; color: #fffbeb; text-align: center; line-height: 1.4; text-shadow: 0 1px 2px rgba(0,0,0,0.4); margin-bottom: -4px;}
         .modal-btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
         .modal-choice-btn {
             width: 100%; padding: 12px 0; border-radius: 10px; border: none; font-size: 15px; font-weight: 800; color: #ffffff; cursor: pointer; transition: transform 0.1s;
@@ -328,6 +327,58 @@
         .btn-mode-4 { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: 1px solid #60a5fa; }
         .btn-mode-5 { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); border: 1px solid #c084fc; }
         .modal-cancel-btn { background: transparent; border: none; color: #3d2314; font-size: 13px; font-weight: 800; cursor: pointer; padding: 4px 8px; }
+
+        /* スコアリセット用トグルスイッチのスタイル */
+        .modal-toggle-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 800;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
+        .toggle-checkbox {
+            display: none;
+        }
+        .toggle-slider {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background-color: #713f12;
+            border-radius: 20px;
+            transition: 0.3s;
+            border: 2px solid #3d2314;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #e5e5e5;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        .toggle-checkbox:checked + .toggle-slider {
+            background-color: #22c55e;
+            border-color: #14532d;
+        }
+        .toggle-checkbox:checked + .toggle-slider::before {
+            transform: translateX(20px);
+            background-color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -336,12 +387,12 @@
         
         <div class="top-bar">
             <div class="score-box">
-                <span class="score-label">得点</span>
+                <span class="score-label">SCORE</span>
                 <span id="currScoreDisp" class="score-val">0</span>
             </div>
             <div class="score-box">
-                <span class="score-label">MAX得点</span>
-                <span id="maxScoreDisp" class="score-val max-val">0</span>
+                <span class="score-label">HI-SCORE</span>
+                <span id="maxScoreDisp" class="score-val hi-score-val">0</span>
             </div>
         </div>
 
@@ -388,20 +439,16 @@
                         </div>
                     </div>
                     <div class="panel-box">
-                        <span class="panel-lbl">連鎖</span>
-                        <span id="currChainDisp" class="stat-val curr-val">0</span>
+                        <span class="panel-lbl">ぷよ消し数</span>
+                        <span id="totalPoppedDisp" class="stat-val curr-val">0</span>
                     </div>
                     <div class="panel-box">
-                        <span class="panel-lbl">MAX連鎖</span>
-                        <span id="maxChainDisp" class="stat-val max-val">0</span>
+                        <span class="panel-lbl">全消し数</span>
+                        <span id="maxAllClearDisp" class="stat-val ac-val">0</span>
                     </div>
                     <div class="panel-box">
-                        <span class="panel-lbl">全消</span>
-                        <span id="currAllClearDisp" class="stat-val ac-val">0</span>
-                    </div>
-                    <div class="panel-box">
-                        <span class="panel-lbl">MAX全消</span>
-                        <span id="maxAllClearDisp" class="stat-val max-val">0</span>
+                        <span class="panel-lbl">最大連鎖</span>
+                        <span id="maxChainDisp" class="stat-val max-chain-val">0</span>
                     </div>
                 </div>
             </div>
@@ -412,6 +459,15 @@
         <div class="modal-card">
             <div class="modal-title">色数の選択</div>
             <div class="modal-desc">練習する色数を選択して盤面をリセットします。</div>
+            
+            <div class="modal-toggle-box">
+                <label class="toggle-label">
+                    <input type="checkbox" id="scoreResetToggle" class="toggle-checkbox">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">スコア・記録もリセット</span>
+                </label>
+            </div>
+
             <div class="modal-btn-group">
                 <button class="modal-choice-btn btn-mode-3" onclick="confirmReset(3)">甘口（3色）</button>
                 <button class="modal-choice-btn btn-mode-4" onclick="confirmReset(4)">中辛（4色）</button>
@@ -479,6 +535,7 @@
         let maxChainCount = 0; 
         let currentAllClearCount = 0;
         let maxAllClearCount = 0;
+        let totalPoppedCount = 0; // リセット時からの総消去ぷよ数
         
         let currentScore = 0;
         let maxScore = 0;
@@ -511,7 +568,7 @@
             // 横長ぷよのベースパス
             const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
 
-            // 結合部の描画（セル境界での接続幅を完全一致させて段差を解消）
+            // 結合部の描画
             let connFill = "";
             let connStroke = "";
 
@@ -587,13 +644,18 @@
 
         function openResetModal() { document.getElementById('resetModal').classList.add('active'); }
         function closeResetModal() { document.getElementById('resetModal').classList.remove('active'); }
+        
         function confirmReset(selectedColors) {
             closeResetModal();
             currentColorCount = selectedColors;
-            startGame();
+            
+            // スコアリセットのトグル状態を取得
+            const isScoreResetOn = document.getElementById('scoreResetToggle').checked;
+            
+            startGame(isScoreResetOn);
         }
 
-        function startGame() {
+        function startGame(isScoreResetOn = false) {
             pickColorPalette();
             initBoard();
             document.getElementById('puyoLayer').innerHTML = '';
@@ -603,11 +665,17 @@
             isGameOver = false;
             isAnimating = false;
             currentAllClearCount = 0;
+            totalPoppedCount = 0;
             currentScore = 0;
             
-            updateChainUI(0);
-            updateAllClearUI();
-            updateScoreUI();
+            // トグルONの場合は最高記録系もリセット
+            if (isScoreResetOn) {
+                maxScore = 0;
+                maxChainCount = 0;
+                maxAllClearCount = 0;
+            }
+            
+            updateStatsUI();
             
             document.getElementById('gameOverMask').classList.add('hidden');
             updateUndoBtn();
@@ -683,6 +751,7 @@
                 maxChainCount: maxChainCount,
                 currentAllClearCount: currentAllClearCount,
                 maxAllClearCount: maxAllClearCount,
+                totalPoppedCount: totalPoppedCount,
                 currentScore: currentScore,
                 maxScore: maxScore,
                 activePiece: activePiece ? {
@@ -703,6 +772,7 @@
             maxChainCount = prev.maxChainCount;
             currentAllClearCount = prev.currentAllClearCount;
             maxAllClearCount = prev.maxAllClearCount;
+            totalPoppedCount = prev.totalPoppedCount || 0;
             currentScore = prev.currentScore;
             maxScore = prev.maxScore;
             activePiece = prev.activePiece ? { ...prev.activePiece } : null;
@@ -712,9 +782,7 @@
             document.getElementById('gameOverMask').classList.add('hidden');
             document.getElementById('puyoLayer').innerHTML = '';
             
-            updateChainUI(0);
-            updateAllClearUI();
-            updateScoreUI();
+            updateStatsUI();
             updateUndoBtn();
             render();
         }
@@ -840,7 +908,10 @@
 
                 currentChain++;
                 if (currentChain > maxChainCount) maxChainCount = currentChain;
-                updateChainUI(currentChain);
+                
+                // 消えたぷよ数を加算
+                totalPoppedCount += toErase.length;
+                updateStatsUI();
                 triggerVibration([30, 20]);
 
                 let totalErasedCount = 0;
@@ -898,13 +969,13 @@
                 if (currentScore > maxScore) {
                     maxScore = currentScore;
                 }
-                updateScoreUI();
+                updateStatsUI();
             }
 
             if (currentChain > 0 && isBoardEmpty()) {
                 currentAllClearCount++;
                 if (currentAllClearCount > maxAllClearCount) maxAllClearCount = currentAllClearCount;
-                updateAllClearUI();
+                updateStatsUI();
                 showAllClearPopup();
                 triggerVibration([50, 30, 50]);
                 await sleep(1200);
@@ -937,19 +1008,12 @@
             setTimeout(() => { if (popup.parentNode) popup.remove(); }, 1000);
         }
 
-        function updateChainUI(current) {
-            document.getElementById('currChainDisp').innerText = current;
-            document.getElementById('maxChainDisp').innerText = maxChainCount;
-        }
-        
-        function updateScoreUI() {
+        function updateStatsUI() {
             document.getElementById('currScoreDisp').innerText = currentScore;
             document.getElementById('maxScoreDisp').innerText = maxScore;
-        }
-
-        function updateAllClearUI() {
-            document.getElementById('currAllClearDisp').innerText = currentAllClearCount;
+            document.getElementById('totalPoppedDisp').innerText = totalPoppedCount;
             document.getElementById('maxAllClearDisp').innerText = maxAllClearCount;
+            document.getElementById('maxChainDisp').innerText = maxChainCount;
         }
 
         function render(isFalling = false) {
