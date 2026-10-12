@@ -328,7 +328,6 @@
         .btn-mode-5 { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); border: 1px solid #c084fc; }
         .modal-cancel-btn { background: transparent; border: none; color: #3d2314; font-size: 13px; font-weight: 800; cursor: pointer; padding: 4px 8px; }
 
-        /* スコアリセット用トグルスイッチのスタイル */
         .modal-toggle-box {
             display: flex;
             align-items: center;
@@ -536,7 +535,7 @@
         let maxChainCount = 0; 
         let currentAllClearCount = 0;
         let maxAllClearCount = 0;
-        let totalPoppedCount = 0; // リセット時からの総消去ぷよ数
+        let totalPoppedCount = 0;
         
         let currentScore = 0;
         let maxScore = 0;
@@ -556,8 +555,8 @@
                 const data = {
                     board: board,
                     puyoQueue: puyoQueue,
-                    activeColorPalette: activeColorPalette,
-                    currentColorCount: currentColorCount, // 現在のコース色数 (3, 4, 5)
+                    activeColorPalette: activeColorPalette, // 現在使用されている色の配列 (例: [1, 2, 4])
+                    currentColorCount: currentColorCount,   // コースの色数 (3, 4, 5)
                     currentScore: currentScore,
                     maxScore: maxScore,
                     totalPoppedCount: totalPoppedCount,
@@ -589,8 +588,15 @@
 
                 board = data.board;
                 puyoQueue = data.puyoQueue || [];
-                currentColorCount = data.currentColorCount || 4; // 色数を復元
-                activeColorPalette = data.activeColorPalette || [1, 2, 3, 4];
+                currentColorCount = data.currentColorCount || 4;
+                
+                // 保存されている選択カラーパレットを復元（整合性チェック含む）
+                if (Array.isArray(data.activeColorPalette) && data.activeColorPalette.length === currentColorCount) {
+                    activeColorPalette = [...data.activeColorPalette];
+                } else {
+                    pickColorPalette();
+                }
+
                 currentScore = data.currentScore || 0;
                 maxScore = data.maxScore || 0;
                 totalPoppedCount = data.totalPoppedCount || 0;
@@ -630,7 +636,6 @@
             if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
             const theme = MASTER_PUYO_THEMES[colorIndex];
 
-            // 目の配置
             const centeredEyesHTML = `
                 <circle cx="15.5" cy="25" r="6.5" fill="#ffffff" />
                 <circle cx="29.5" cy="25" r="6.5" fill="#ffffff" />
@@ -641,11 +646,8 @@
             `;
 
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
-
-            // 横長ぷよのベースパス
             const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
 
-            // 結合部の描画
             let connFill = "";
             let connStroke = "";
 
@@ -672,18 +674,11 @@
 
             return `<div class="puyo-inner">
                 <svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;">
-                    <!-- 横長ぷよのベース形状 -->
                     <path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="1.5" stroke-linejoin="round" />
-                    
-                    <!-- 結合部の塗りつぶしと枠線 -->
                     ${connFill}
                     ${connStroke}
-                    
-                    <!-- 光沢と目 -->
                     ${highlightHTML}
                     ${isGhost ? '' : centeredEyesHTML}
-                    
-                    <!-- 軸ぷよのグロウエフェクト -->
                     <path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" />
                 </svg>
             </div>`;
@@ -725,10 +720,7 @@
         function confirmReset(selectedColors) {
             closeResetModal();
             currentColorCount = selectedColors;
-            
-            // スコアリセットのトグル状態を取得
             const isScoreResetOn = document.getElementById('scoreResetToggle').checked;
-            
             startGame(isScoreResetOn);
         }
 
@@ -745,7 +737,6 @@
             totalPoppedCount = 0;
             currentScore = 0;
             
-            // トグルONの場合は最高記録系もリセット
             if (isScoreResetOn) {
                 maxScore = 0;
                 maxChainCount = 0;
@@ -753,7 +744,6 @@
             }
             
             updateStatsUI();
-            
             document.getElementById('gameOverMask').classList.add('hidden');
             updateUndoBtn();
             refillQueue();
@@ -777,7 +767,7 @@
                 document.getElementById('gameOverMask').classList.remove('hidden');
             }
 
-            // 新しいぷよが出現するタイミングでゲーム状態(現在の色数を含む)を全保存
+            // 新しいぷよが出現するタイミングでゲーム状態(現在の色数・色配列)を全保存
             saveResumeData();
         }
 
@@ -849,7 +839,7 @@
             const prev = historyStack.pop();
             board = prev.board.map(r => r.map(c => c ? { ...c } : null));
             puyoQueue = prev.puyoQueue;
-            activeColorPalette = prev.activeColorPalette;
+            activeColorPalette = [...prev.activeColorPalette];
             currentColorCount = prev.currentColorCount || 4;
             maxChainCount = prev.maxChainCount;
             currentAllClearCount = prev.currentAllClearCount;
@@ -992,7 +982,6 @@
                 currentChain++;
                 if (currentChain > maxChainCount) maxChainCount = currentChain;
                 
-                // 消えたぷよ数を加算
                 totalPoppedCount += toErase.length;
                 updateStatsUI();
                 triggerVibration([30, 20]);
@@ -1254,15 +1243,15 @@
         document.addEventListener('keydown', (e) => {
             if (["a", "A", "d", "D", "s", "S", "q", "Q", "e", "E", "/", "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp"].includes(e.key)) { e.preventDefault(); }
             switch(e.key) {
-                case 'a': case 'ArrowLeft': movePiece(-1); break;
-                case 'd': case 'ArrowRight': movePiece(1); break;
-                case 's': case 'ArrowDown': dropPiece(); break;
-                case 'q': case '/': rotatePiece(-1); break;
-                case 'e': case 'ArrowUp': rotatePiece(1); break;
+                case 'a': case 'A': case 'ArrowLeft': movePiece(-1); break;
+                case 'd': case 'D': case 'ArrowRight': movePiece(1); break;
+                case 's': case 'S': case 'ArrowDown': dropPiece(); break;
+                case 'q': case 'Q': case '/': rotatePiece(-1); break;
+                case 'e': case 'E': case 'ArrowUp': rotatePiece(1); break;
             }
         });
 
-        // 起動時：保存データがあればロードして途中再開（色数・NEXT・盤面・各種スコア復元）、なければリセットダイアログ表示
+        // 起動時：保存データがあればロードして途中再開（色数・選出カラー配列含む）、なければリセットダイアログ表示
         window.onload = () => {
             if (!loadResumeData()) {
                 startGame();
