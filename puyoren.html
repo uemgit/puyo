@@ -541,7 +541,7 @@
         let currentScore = 0;
         let maxScore = 0;
 
-        let currentColorCount = 4;
+        let currentColorCount = 4; // 甘口(3色)・中辛(4色)・辛口(5色)
         let isAnimating = false;
         let isGameOver = false;
         let nextPuyoId = 1;
@@ -557,7 +557,7 @@
                     board: board,
                     puyoQueue: puyoQueue,
                     activeColorPalette: activeColorPalette,
-                    currentColorCount: currentColorCount,
+                    currentColorCount: currentColorCount, // 現在のコース色数 (3, 4, 5)
                     currentScore: currentScore,
                     maxScore: maxScore,
                     totalPoppedCount: totalPoppedCount,
@@ -589,8 +589,8 @@
 
                 board = data.board;
                 puyoQueue = data.puyoQueue || [];
+                currentColorCount = data.currentColorCount || 4; // 色数を復元
                 activeColorPalette = data.activeColorPalette || [1, 2, 3, 4];
-                currentColorCount = data.currentColorCount || 4;
                 currentScore = data.currentScore || 0;
                 maxScore = data.maxScore || 0;
                 totalPoppedCount = data.totalPoppedCount || 0;
@@ -777,7 +777,7 @@
                 document.getElementById('gameOverMask').classList.remove('hidden');
             }
 
-            // 新しいぷよが出現するタイミングでゲーム状態を全保存
+            // 新しいぷよが出現するタイミングでゲーム状態(現在の色数を含む)を全保存
             saveResumeData();
         }
 
@@ -828,6 +828,7 @@
                 board: board.map(r => r.map(c => c ? { ...c } : null)),
                 puyoQueue: JSON.parse(JSON.stringify(puyoQueue)),
                 activeColorPalette: [...activeColorPalette],
+                currentColorCount: currentColorCount,
                 maxChainCount: maxChainCount,
                 currentAllClearCount: currentAllClearCount,
                 maxAllClearCount: maxAllClearCount,
@@ -849,6 +850,7 @@
             board = prev.board.map(r => r.map(c => c ? { ...c } : null));
             puyoQueue = prev.puyoQueue;
             activeColorPalette = prev.activeColorPalette;
+            currentColorCount = prev.currentColorCount || 4;
             maxChainCount = prev.maxChainCount;
             currentAllClearCount = prev.currentAllClearCount;
             maxAllClearCount = prev.maxAllClearCount;
@@ -1252,15 +1254,15 @@
         document.addEventListener('keydown', (e) => {
             if (["a", "A", "d", "D", "s", "S", "q", "Q", "e", "E", "/", "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp"].includes(e.key)) { e.preventDefault(); }
             switch(e.key) {
-                case 'a': case 'A': case 'ArrowLeft': movePiece(-1); break;
-                case 'd': case 'D': case 'ArrowRight': movePiece(1); break;
-                case 's': case 'S': case 'ArrowDown': dropPiece(); break;
-                case 'q': case 'Q': case '/': rotatePiece(-1); break;
-                case 'e': case 'E': case 'ArrowUp': rotatePiece(1); break;
+                case 'a': case 'ArrowLeft': movePiece(-1); break;
+                case 'd': case 'ArrowRight': movePiece(1); break;
+                case 's': case 'ArrowDown': dropPiece(); break;
+                case 'q': case '/': rotatePiece(-1); break;
+                case 'e': case 'ArrowUp': rotatePiece(1); break;
             }
         });
 
-        // 起動時：保存データがあればロードして途中再開、なければリセットダイアログ表示
+        // 起動時：保存データがあればロードして途中再開（色数・NEXT・盤面・各種スコア復元）、なければリセットダイアログ表示
         window.onload = () => {
             if (!loadResumeData()) {
                 startGame();
