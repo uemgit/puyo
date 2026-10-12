@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Puyo Chain Practice</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+        }
+
+        :root {
+            --bg-dark-1: #c48d4e;
+            --bg-dark-2: #b2793e;
+            --cell-size: min(calc((100vw - 118px) / 6), calc((100dvh - 80px) / 13.2), 64px);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--bg-dark-1) 0%, var(--bg-dark-2) 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #2a180d;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+            position: relative;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            background: rgba(230, 185, 130, 0.75);
+            backdrop-filter: blur(8px);
+            border: 2px solid #6b3e1d;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+        }
+
+        .score-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 100px;
+        }
+
+        .score-label {
+            font-size: 10px;
+            font-weight: 800;
+            color: #4a270f;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .score-val {
+            font-size: clamp(20px, 3vh, 28px);
+            font-weight: 900;
+            line-height: 1;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 視認性を重視した豪華な黄金色 (HI-SCORE) */
+        .score-val.hi-score-val {
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(255, 215, 0, 0.6), 0 0 2px #3d2314;
+        }
+
+        .stage-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            width: 100%;
+            max-width: 600px;
+            flex: 1;
+            position: relative;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 24px;
+            width: 48px;
+            height: calc(var(--cell-size) * 13 + 10px);
+            flex-shrink: 0;
+            z-index: 30;
+            padding-top: 2px;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            width: 54px;
+            height: calc(var(--cell-size) * 13 + 10px);
+            flex-shrink: 0;
+            pointer-events: none;
+            z-index: 30;
+        }
+
+        .right-top {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            pointer-events: auto;
+        }
+
+        .panel-box {
+            background: rgba(230, 185, 130, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(107, 62, 29, 0.4);
+            border-radius: 6px;
+            padding: 4px 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin-bottom: 6px;
+        }
+
+        .panel-box-next2 {
+            margin-bottom: 20px;
+        }
+
+        .panel-lbl {
+            font-size: 7.5px;
+            font-weight: 800;
+            color: #4a270f;
+            letter-spacing: -0.2px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+        }
+
+        .stat-val {
+            font-size: clamp(18px, 2.8vh, 24px);
+            font-weight: 900;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .curr-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
+        .ac-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
+        /* 白色 (最大連鎖数) */
+        .max-chain-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
+
+        .side-act-btn {
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            transition: transform 0.08s, background 0.15s;
+            pointer-events: auto;
+        }
+
+        .side-act-btn:active { transform: scale(0.92); }
+        .side-act-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .btn-reset { background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%); padding: 8px 2px; font-size: 10px; border: 1px solid #fca5a5; }
+        .btn-undo { background: linear-gradient(180deg, #d97706 0%, #92400e 100%); padding: 10px 2px; font-size: 11px; font-weight: 900; border: 1px solid #fef08a; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.45); }
+
+        .board {
+            position: relative;
+            width: calc(var(--cell-size) * 6 + 10px);
+            height: calc(var(--cell-size) * 13 + 10px);
+            background: #a36d39;
+            border: 5px solid #3d2314;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(61, 35, 20, 0.5), inset 0 0 12px rgba(0, 0, 0, 0.35);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .grid-layer {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(13, 1fr);
+            pointer-events: none;
+        }
+
+        .grid-cell { border-right: 1px solid rgba(61, 35, 20, 0.18); border-bottom: 1px solid rgba(61, 35, 20, 0.18); }
+        .grid-cell:nth-child(6n) { border-right: none; }
+        .grid-cell:nth-last-child(-n+6) { border-bottom: none; }
+
+        .death-line {
+            position: absolute;
+            top: calc(var(--cell-size) * 1);
+            left: 0; right: 0; height: 0;
+            border-top: 2px dashed #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.9);
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        #puyoLayer { position: absolute; inset: 0; pointer-events: none; }
+
+        .puyo-item {
+            position: absolute;
+            width: var(--cell-size); height: var(--cell-size);
+            padding: 1px;
+            will-change: left, top, transform;
+            transition: left 0.08s ease-out, top 0.08s ease-out;
+            z-index: 10;
+        }
+        .puyo-item.falling { transition: top 0.2s cubic-bezier(0.4, 0.0, 0.2, 1), left 0.08s ease-out; }
+        .puyo-item.ghost { opacity: 0.35; filter: saturate(0.6); z-index: 5; }
+
+        .puyo-inner {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            transform-origin: center center;
+        }
+        .puyo-pop .puyo-inner { animation: slowPopAnim 1.0s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        @keyframes slowPopAnim {
+            0% { transform: scale(1); filter: brightness(1); opacity: 1; }
+            30% { transform: scale(1.15); filter: brightness(1.5); opacity: 1; }
+            100% { transform: scale(0.1); filter: brightness(2); opacity: 0; }
+        }
+
+        .axis-glow { display: none; }
+        .axis-puyo .axis-glow { display: block; animation: axisGlowAnim 0.6s infinite alternate ease-in-out; }
+        @keyframes axisGlowAnim {
+            0% { opacity: 0.3; stroke-width: 1.5; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.6)); }
+            100% { opacity: 1; stroke-width: 3; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1)); }
+        }
+
+        .chain-num-popup {
+            position: absolute; transform: translate(-50%, -50%);
+            font-size: clamp(28px, 5vh, 42px); font-weight: 900; color: #fef08a;
+            text-shadow: 0 0 6px #000, 0 0 12px #ca8a04, 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            z-index: 50; pointer-events: none;
+            animation: floatChainNum 1.0s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
+        }
+        @keyframes floatChainNum {
+            0% { transform: translate(-50%, -20%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            80% { transform: translate(-50%, -70%) scale(1.0); opacity: 1; }
+            100% { transform: translate(-50%, -90%) scale(0.8); opacity: 0; }
+        }
+
+        .all-clear-popup {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: clamp(32px, 6vh, 48px); font-weight: 900; color: #fef08a;
+            text-shadow: 0 0 10px #000, 0 0 20px #eab308, 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            z-index: 55; pointer-events: none; white-space: nowrap;
+            animation: popAllClear 1.0s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popAllClear {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+        }
+
+        .preview-box {
+            background: rgba(163, 109, 57, 0.8); border-radius: 6px; padding: 2px;
+            display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%;
+        }
+        .puyo-preview-cell-next { width: calc(var(--cell-size) * 0.8); height: calc(var(--cell-size) * 0.8); }
+        .puyo-preview-cell-next2 { width: calc(var(--cell-size) * 0.65); height: calc(var(--cell-size) * 0.65); }
+
+        .tap-guide-overlay { position: absolute; inset: 0; display: flex; pointer-events: none; z-index: 2; opacity: 0.1; }
+        .tap-zone-left { width: 50%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.3); }
+        .tap-zone-right { width: 50%; height: 100%; }
+
+        .game-over-mask {
+            position: absolute; inset: 0; background: rgba(163, 109, 57, 0.9); backdrop-filter: blur(4px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 60; border-radius: 8px; gap: 16px;
+        }
+        .game-over-mask.hidden { display: none; }
+        .game-over-text { font-size: 24px; font-weight: 900; color: #dc2626; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4); }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-card {
+            background: #a36d39; border: 3px solid #3d2314; border-radius: 16px; padding: 24px;
+            width: 85%; max-width: 320px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+            display: flex; flex-direction: column; align-items: center; gap: 16px; transform: scale(0.9); transition: transform 0.2s;
+        }
+        .modal-overlay.active .modal-card { transform: scale(1); }
+        .modal-title { font-size: 18px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
+        .modal-desc { font-size: 13px; color: #fffbeb; text-align: center; line-height: 1.4; text-shadow: 0 1px 2px rgba(0,0,0,0.4); margin-bottom: -4px;}
+        .modal-btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .modal-choice-btn {
+            width: 100%; padding: 12px 0; border-radius: 10px; border: none; font-size: 15px; font-weight: 800; color: #ffffff; cursor: pointer; transition: transform 0.1s;
+        }
+        .modal-choice-btn:active { transform: scale(0.96); }
+        .btn-mode-3 { background: linear-gradient(135deg, #10b981 0%, #047857 100%); border: 1px solid #34d399; }
+        .btn-mode-4 { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: 1px solid #60a5fa; }
+        .btn-mode-5 { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); border: 1px solid #c084fc; }
+        .modal-cancel-btn { background: transparent; border: none; color: #3d2314; font-size: 13px; font-weight: 800; cursor: pointer; padding: 4px 8px; }
+
+        /* スコアリセット用トグルスイッチのスタイル */
+        .modal-toggle-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 800;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
+        .toggle-checkbox {
+            display: none;
+        }
+        .toggle-slider {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background-color: #713f12;
+            border-radius: 20px;
+            transition: 0.3s;
+            border: 2px solid #3d2314;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #e5e5e5;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        .toggle-checkbox:checked + .toggle-slider {
+            background-color: #22c55e;
+            border-color: #14532d;
+        }
+        .toggle-checkbox:checked + .toggle-slider::before {
+            transform: translateX(20px);
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div class="top-bar">
+            <div class="score-box">
+                <span class="score-label">SCORE</span>
+                <span id="currScoreDisp" class="score-val">0</span>
+            </div>
+            <div class="score-box">
+                <span class="score-label">HI-SCORE</span>
+                <span id="maxScoreDisp" class="score-val hi-score-val">0</span>
+            </div>
+        </div>
+
+        <div class="stage-area">
+            <div class="left-panel">
+                <button class="side-act-btn btn-reset" onclick="openResetModal()">
+                    <span style="font-size: 12px;">↻</span>
+                    <span>リセット</span>
+                </button>
+                <button id="undoBtn" class="side-act-btn btn-undo" onclick="undo()">
+                    <span style="font-size: 13px;">↩</span>
+                    <span>戻す</span>
+                </button>
+            </div>
+
+            <div id="boardContainer" class="board">
+                <div class="tap-guide-overlay">
+                    <div class="tap-zone-left"></div>
+                    <div class="tap-zone-right"></div>
+                </div>
+                <div class="grid-layer" id="gridBg"></div>
+                <div class="death-line"></div>
+                <div id="puyoLayer"></div>
+                <div id="gameOverMask" class="game-over-mask hidden">
+                    <div class="game-over-text">ばたんきゅ〜</div>
+                    <button class="side-act-btn btn-reset" style="padding: 10px 20px; font-size: 14px; width: auto;" onclick="openResetModal()">やり直す</button>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="right-top">
+                    <div class="panel-box">
+                        <span class="panel-lbl">NEXT</span>
+                        <div class="preview-box">
+                            <div id="next1Sub" class="puyo-preview-cell-next"></div>
+                            <div id="next1Main" class="puyo-preview-cell-next"></div>
+                        </div>
+                    </div>
+                    <div class="panel-box panel-box-next2" style="opacity: 0.9;">
+                        <span class="panel-lbl">NEXT2</span>
+                        <div class="preview-box">
+                            <div id="next2Sub" class="puyo-preview-cell-next2"></div>
+                            <div id="next2Main" class="puyo-preview-cell-next2"></div>
+                        </div>
+                    </div>
+                    <div class="panel-box">
+                        <span class="panel-lbl">ぷよ消し数</span>
+                        <span id="totalPoppedDisp" class="stat-val curr-val">0</span>
+                    </div>
+                    <div class="panel-box">
+                        <span class="panel-lbl">全消し数</span>
+                        <span id="maxAllClearDisp" class="stat-val ac-val">0</span>
+                    </div>
+                    <div class="panel-box">
+                        <span class="panel-lbl">最大連鎖</span>
+                        <span id="maxChainDisp" class="stat-val max-chain-val">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resetModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title">色数の選択</div>
+            <div class="modal-desc">練習する色数を選択して盤面をリセットします。</div>
+            
+            <div class="modal-toggle-box">
+                <label class="toggle-label">
+                    <input type="checkbox" id="scoreResetToggle" class="toggle-checkbox">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">スコア・記録もリセット</span>
+                </label>
+            </div>
+
+            <div class="modal-btn-group">
+                <button class="modal-choice-btn btn-mode-3" onclick="confirmReset(3)">甘口（3色）</button>
+                <button class="modal-choice-btn btn-mode-4" onclick="confirmReset(4)">中辛（4色）</button>
+                <button class="modal-choice-btn btn-mode-5" onclick="confirmReset(5)">辛口（5色）</button>
+            </div>
+            <button class="modal-cancel-btn" onclick="closeResetModal()">キャンセル</button>
+        </div>
+    </div>
+
+    <script>
+        const COLS = 6;
+        const ROWS = 13; 
+        const SAVE_STORAGE_KEY = 'PUYO_CHAIN_PRACTICE_RESUME_DATA';
+
+        // アニメ調マットカラーの定義
+        const MASTER_PUYO_THEMES = {
+            1: { base: '#ef4444', stroke: '#7f1d1d' }, // 赤
+            2: { base: '#0ea5e9', stroke: '#0c4a6e' }, // 青
+            3: { base: '#22c55e', stroke: '#14532d' }, // 緑
+            4: { base: '#eab308', stroke: '#713f12' }, // 黄
+            5: { base: '#a855f7', stroke: '#4c1d95' }  // 紫
+        };
+
+        const ROTATIONS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
+        const CHAIN_BONUS_TABLE = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
+        
+        function getChainBonus(chain) {
+            if (chain <= 1) return 0;
+            if (chain < CHAIN_BONUS_TABLE.length) return CHAIN_BONUS_TABLE[chain];
+            return 512;
+        }
+
+        function getConnectBonus(count) {
+            if (count <= 4) return 0;
+            if (count === 5) return 2;
+            if (count === 6) return 3;
+            if (count === 7) return 4;
+            if (count === 8) return 5;
+            if (count === 9) return 6;
+            if (count === 10) return 7;
+            if (count >= 11) return 10;
+            return 0;
+        }
+
+        function getColorBonus(colorCount) {
+            if (colorCount <= 1) return 0;
+            if (colorCount === 2) return 3;
+            if (colorCount === 3) return 6;
+            if (colorCount === 4) return 10;
+            if (colorCount >= 5) return 15;
+            return 0;
+        }
+
+        function triggerVibration(pattern) {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                try { navigator.vibrate(pattern); } catch (e) { /* ignore */ }
+            }
+        }
+
+        let activeColorPalette = [];
+        let board = [];
+        let puyoQueue = [];
+        let activePiece = null;
+        let historyStack = [];
+        
+        let maxChainCount = 0; 
+        let currentAllClearCount = 0;
+        let maxAllClearCount = 0;
+        let totalPoppedCount = 0; // リセット時からの総消去ぷよ数
+        
+        let currentScore = 0;
+        let maxScore = 0;
+
+        let currentColorCount = 4;
+        let isAnimating = false;
+        let isGameOver = false;
+        let nextPuyoId = 1;
+        
+        let unconnectedIds = new Set();
+
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        /* レジューム用ストレージ保存関数 */
+        function saveResumeData() {
+            try {
+                const data = {
+                    board: board,
+                    puyoQueue: puyoQueue,
+                    activeColorPalette: activeColorPalette,
+                    currentColorCount: currentColorCount,
+                    currentScore: currentScore,
+                    maxScore: maxScore,
+                    totalPoppedCount: totalPoppedCount,
+                    maxAllClearCount: maxAllClearCount,
+                    currentAllClearCount: currentAllClearCount,
+                    maxChainCount: maxChainCount,
+                    nextPuyoId: nextPuyoId,
+                    isGameOver: isGameOver,
+                    activePiece: activePiece ? {
+                        x: activePiece.x, y: activePiece.y, rot: activePiece.rot, angle: activePiece.angle,
+                        isLanded: activePiece.isLanded,
+                        main: { ...activePiece.main }, sub: { ...activePiece.sub }
+                    } : null
+                };
+                localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {
+                console.error("Failed to save resume data:", e);
+            }
+        }
+
+        /* レジューム用ストレージ読み込み関数 */
+        function loadResumeData() {
+            try {
+                const json = localStorage.getItem(SAVE_STORAGE_KEY);
+                if (!json) return false;
+                
+                const data = JSON.parse(json);
+                if (!data || !data.board) return false;
+
+                board = data.board;
+                puyoQueue = data.puyoQueue || [];
+                activeColorPalette = data.activeColorPalette || [1, 2, 3, 4];
+                currentColorCount = data.currentColorCount || 4;
+                currentScore = data.currentScore || 0;
+                maxScore = data.maxScore || 0;
+                totalPoppedCount = data.totalPoppedCount || 0;
+                maxAllClearCount = data.maxAllClearCount || 0;
+                currentAllClearCount = data.currentAllClearCount || 0;
+                maxChainCount = data.maxChainCount || 0;
+                nextPuyoId = data.nextPuyoId || 1;
+                isGameOver = !!data.isGameOver;
+                activePiece = data.activePiece ? { ...data.activePiece } : null;
+
+                historyStack = [];
+                unconnectedIds.clear();
+                isAnimating = false;
+
+                initGrid();
+                document.getElementById('puyoLayer').innerHTML = '';
+                updateStatsUI();
+                updateUndoBtn();
+
+                if (isGameOver) {
+                    document.getElementById('gameOverMask').classList.remove('hidden');
+                } else {
+                    document.getElementById('gameOverMask').classList.add('hidden');
+                    if (!activePiece) {
+                        spawnPiece();
+                    }
+                }
+                render();
+                return true;
+            } catch (e) {
+                console.error("Failed to load resume data:", e);
+                return false;
+            }
+        }
+
+        function createPuyoSVG(colorIndex, isGhost = false, conn = {t:0, r:0, b:0, l:0}) {
+            if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
+            const theme = MASTER_PUYO_THEMES[colorIndex];
+
+            // 目の配置
+            const centeredEyesHTML = `
+                <circle cx="15.5" cy="25" r="6.5" fill="#ffffff" />
+                <circle cx="29.5" cy="25" r="6.5" fill="#ffffff" />
+                <circle cx="15.5" cy="25" r="3" fill="#0f172a" />
+                <circle cx="29.5" cy="25" r="3" fill="#0f172a" />
+                <circle cx="17" cy="23" r="1.5" fill="#ffffff" />
+                <circle cx="31" cy="23" r="1.5" fill="#ffffff" />
+            `;
+
+            const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
+
+            // 横長ぷよのベースパス
+            const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
+
+            // 結合部の描画
+            let connFill = "";
+            let connStroke = "";
+
+            if (conn.r) {
+                connFill += `<rect x="22.5" y="14" width="24" height="24" fill="${theme.base}" />`;
+                connStroke += `<line x1="37" y1="14" x2="46" y2="14" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+                connStroke += `<line x1="39" y1="38" x2="46" y2="38" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+            }
+            if (conn.l) {
+                connFill += `<rect x="-1" y="14" width="24" height="24" fill="${theme.base}" />`;
+                connStroke += `<line x1="-1" y1="14" x2="8" y2="14" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+                connStroke += `<line x1="-1" y1="38" x2="6" y2="38" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+            }
+            if (conn.b) {
+                connFill += `<rect x="7.5" y="25" width="30" height="21" fill="${theme.base}" />`;
+                connStroke += `<line x1="7.5" y1="36" x2="7.5" y2="46" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+                connStroke += `<line x1="37.5" y1="36" x2="37.5" y2="46" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+            }
+            if (conn.t) {
+                connFill += `<rect x="7.5" y="-1" width="30" height="20" fill="${theme.base}" />`;
+                connStroke += `<line x1="7.5" y1="-1" x2="7.5" y2="10" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+                connStroke += `<line x1="37.5" y1="-1" x2="37.5" y2="10" stroke="${theme.stroke}" stroke-width="1.5" stroke-linecap="round" />`;
+            }
+
+            return `<div class="puyo-inner">
+                <svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;">
+                    <!-- 横長ぷよのベース形状 -->
+                    <path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="1.5" stroke-linejoin="round" />
+                    
+                    <!-- 結合部の塗りつぶしと枠線 -->
+                    ${connFill}
+                    ${connStroke}
+                    
+                    <!-- 光沢と目 -->
+                    ${highlightHTML}
+                    ${isGhost ? '' : centeredEyesHTML}
+                    
+                    <!-- 軸ぷよのグロウエフェクト -->
+                    <path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" />
+                </svg>
+            </div>`;
+        }
+
+        function initGrid() {
+            const gridBg = document.getElementById('gridBg');
+            gridBg.innerHTML = '';
+            for (let i = 0; i < ROWS * COLS; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                gridBg.appendChild(cell);
+            }
+        }
+
+        function initBoard() {
+            board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+            initGrid();
+        }
+
+        function pickColorPalette() {
+            const allColors = [1, 2, 3, 4, 5];
+            if (currentColorCount === 5) { activeColorPalette = allColors; } 
+            else { activeColorPalette = [...allColors].sort(() => Math.random() - 0.5).slice(0, currentColorCount); }
+        }
+
+        function generatePiece() { 
+            return { 
+                main: activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)], 
+                sub: activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)] 
+            }; 
+        }
+
+        function refillQueue() { while (puyoQueue.length < 3) puyoQueue.push(generatePiece()); }
+
+        function openResetModal() { document.getElementById('resetModal').classList.add('active'); }
+        function closeResetModal() { document.getElementById('resetModal').classList.remove('active'); }
+        
+        function confirmReset(selectedColors) {
+            closeResetModal();
+            currentColorCount = selectedColors;
+            
+            // スコアリセットのトグル状態を取得
+            const isScoreResetOn = document.getElementById('scoreResetToggle').checked;
+            
+            startGame(isScoreResetOn);
+        }
+
+        function startGame(isScoreResetOn = false) {
+            pickColorPalette();
+            initBoard();
+            document.getElementById('puyoLayer').innerHTML = '';
+            puyoQueue = [];
+            historyStack = [];
+            unconnectedIds.clear();
+            isGameOver = false;
+            isAnimating = false;
+            currentAllClearCount = 0;
+            totalPoppedCount = 0;
+            currentScore = 0;
+            
+            // トグルONの場合は最高記録系もリセット
+            if (isScoreResetOn) {
+                maxScore = 0;
+                maxChainCount = 0;
+                maxAllClearCount = 0;
+            }
+            
+            updateStatsUI();
+            
+            document.getElementById('gameOverMask').classList.add('hidden');
+            updateUndoBtn();
+            refillQueue();
+            spawnPiece();
+            render();
+        }
+
+        function spawnPiece() {
+            refillQueue();
+            const next = puyoQueue.shift();
+            refillQueue();
+            activePiece = {
+                x: 2, y: 1, rot: 0, angle: 0,
+                isLanded: false,
+                main: { color: next.main, id: nextPuyoId++ },
+                sub: { color: next.sub, id: nextPuyoId++ }
+            };
+            if (board[activePiece.y][activePiece.x] !== null) {
+                isGameOver = true;
+                activePiece = null;
+                document.getElementById('gameOverMask').classList.remove('hidden');
+            }
+
+            // 新しいぷよが出現するタイミングでゲーム状態を全保存
+            saveResumeData();
+        }
+
+        function getSubPos(piece) { return { x: piece.x + ROTATIONS[piece.rot].dx, y: piece.y + ROTATIONS[piece.rot].dy }; }
+
+        function isValidPos(x, y) {
+            if (x < 0 || x >= COLS || y >= ROWS) return false;
+            if (y >= 0 && board[y][x] !== null) return false;
+            return true;
+        }
+
+        function canPlacePiece(piece) { return isValidPos(piece.x, piece.y) && isValidPos(getSubPos(piece).x, getSubPos(piece).y); }
+
+        function movePiece(dx) {
+            if (isAnimating || isGameOver || !activePiece) return;
+            const test = { ...activePiece, x: activePiece.x + dx };
+            if (canPlacePiece(test)) { 
+                activePiece = test; 
+                render(); 
+                triggerVibration(10);
+            }
+        }
+
+        function rotatePiece(dir) {
+            if (isAnimating || isGameOver || !activePiece) return;
+            let newRot = (activePiece.rot + dir + 4) % 4;
+            let newAngle = activePiece.angle + (dir * 90);
+            let test = { ...activePiece, rot: newRot, angle: newAngle };
+
+            let success = false;
+            if (canPlacePiece(test)) {
+                activePiece = test;
+                success = true;
+            } else {
+                let kickR = { ...test, x: test.x + 1 }, kickL = { ...test, x: test.x - 1 }, kickU = { ...test, y: test.y - 1 };
+                if (canPlacePiece(kickR)) { activePiece = kickR; success = true; }
+                else if (canPlacePiece(kickL)) { activePiece = kickL; success = true; }
+                else if (canPlacePiece(kickU)) { activePiece = kickU; success = true; }
+            }
+            if (success) {
+                render();
+                triggerVibration(10);
+            }
+        }
+
+        function saveState() {
+            historyStack.push({
+                board: board.map(r => r.map(c => c ? { ...c } : null)),
+                puyoQueue: JSON.parse(JSON.stringify(puyoQueue)),
+                activeColorPalette: [...activeColorPalette],
+                maxChainCount: maxChainCount,
+                currentAllClearCount: currentAllClearCount,
+                maxAllClearCount: maxAllClearCount,
+                totalPoppedCount: totalPoppedCount,
+                currentScore: currentScore,
+                maxScore: maxScore,
+                activePiece: activePiece ? {
+                    x: activePiece.x, y: activePiece.y, rot: activePiece.rot, angle: activePiece.angle,
+                    isLanded: activePiece.isLanded,
+                    main: { ...activePiece.main }, sub: { ...activePiece.sub }
+                } : null
+            });
+            updateUndoBtn();
+        }
+
+        function undo() {
+            if (isAnimating || historyStack.length === 0) return;
+            const prev = historyStack.pop();
+            board = prev.board.map(r => r.map(c => c ? { ...c } : null));
+            puyoQueue = prev.puyoQueue;
+            activeColorPalette = prev.activeColorPalette;
+            maxChainCount = prev.maxChainCount;
+            currentAllClearCount = prev.currentAllClearCount;
+            maxAllClearCount = prev.maxAllClearCount;
+            totalPoppedCount = prev.totalPoppedCount || 0;
+            currentScore = prev.currentScore;
+            maxScore = prev.maxScore;
+            activePiece = prev.activePiece ? { ...prev.activePiece } : null;
+
+            unconnectedIds.clear();
+            isGameOver = false;
+            document.getElementById('gameOverMask').classList.add('hidden');
+            document.getElementById('puyoLayer').innerHTML = '';
+            
+            updateStatsUI();
+            updateUndoBtn();
+            render();
+            saveResumeData();
+        }
+
+        function updateUndoBtn() { document.getElementById('undoBtn').disabled = (historyStack.length === 0); }
+
+        async function dropPiece() {
+            if (isAnimating || isGameOver || !activePiece) return;
+            isAnimating = true;
+            saveState();
+
+            let dist = 0;
+            while (true) {
+                let test = { ...activePiece, y: activePiece.y + dist + 1 };
+                if (canPlacePiece(test)) dist++; else break;
+            }
+
+            activePiece.y += dist;
+            activePiece.isLanded = true;
+            render(true);
+            triggerVibration(20);
+            await sleep(200);
+
+            const sub = getSubPos(activePiece);
+            const placedIds = [];
+            if (activePiece.y >= 0) { board[activePiece.y][activePiece.x] = { ...activePiece.main, isPopping: false }; placedIds.push(activePiece.main.id); }
+            if (sub.y >= 0) { board[sub.y][sub.x] = { ...activePiece.sub, isPopping: false }; placedIds.push(activePiece.sub.id); }
+
+            placedIds.forEach(id => unconnectedIds.add(id));
+            activePiece = null;
+            render(); 
+            await sleep(200);
+            
+            placedIds.forEach(id => unconnectedIds.delete(id));
+            render();
+
+            await resolveChains();
+        }
+
+        async function applyGravity() {
+            let movedIds = [];
+            for (let x = 0; x < COLS; x++) {
+                let writeY = ROWS - 1;
+                for (let y = ROWS - 1; y >= 0; y--) {
+                    if (board[y][x]) {
+                        if (writeY !== y) {
+                            board[writeY][x] = board[y][x];
+                            board[y][x] = null;
+                            movedIds.push(board[writeY][x].id);
+                        }
+                        writeY--;
+                    }
+                }
+            }
+            if (movedIds.length > 0) {
+                movedIds.forEach(id => unconnectedIds.add(id));
+                render(true);
+                await sleep(200);
+            }
+            return movedIds;
+        }
+
+        function findMatches() {
+            let visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+            let toErase = [];
+            let eraseGroups = [];
+            
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    let cell = board[y][x];
+                    if (cell && !visited[y][x]) {
+                        let group = [];
+                        let queue = [{ x, y }];
+                        visited[y][x] = true;
+                        while (queue.length > 0) {
+                            let curr = queue.shift();
+                            group.push(curr);
+                            [[0,1], [0,-1], [1,0], [-1,0]].forEach(([dx, dy]) => {
+                                let nx = curr.x + dx, ny = curr.y + dy;
+                                if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+                                    if (!visited[ny][nx] && board[ny][nx] && board[ny][nx].color === cell.color) {
+                                        visited[ny][nx] = true;
+                                        queue.push({ x: nx, y: ny });
+                                    }
+                                }
+                            });
+                        }
+                        if (group.length >= 4) {
+                            toErase = toErase.concat(group);
+                            eraseGroups.push({ color: cell.color, count: group.length });
+                        }
+                    }
+                }
+            }
+            return { toErase, eraseGroups };
+        }
+
+        function isBoardEmpty() {
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    if (board[y][x] !== null) return false;
+                }
+            }
+            return true;
+        }
+
+        async function resolveChains() {
+            isAnimating = true;
+            let currentChain = 0;
+            let chainTotalScore = 0;
+
+            let movedIds = await applyGravity();
+            if (movedIds.length > 0) {
+                render();
+                await sleep(200);
+                movedIds.forEach(id => unconnectedIds.delete(id));
+                render();
+            }
+
+            while (true) {
+                let { toErase, eraseGroups } = findMatches();
+                if (toErase.length === 0) break;
+
+                currentChain++;
+                if (currentChain > maxChainCount) maxChainCount = currentChain;
+                
+                // 消えたぷよ数を加算
+                totalPoppedCount += toErase.length;
+                updateStatsUI();
+                triggerVibration([30, 20]);
+
+                let totalErasedCount = 0;
+                let connectBonusSum = 0;
+                let colorsErased = new Set();
+
+                for (let g of eraseGroups) {
+                    totalErasedCount += g.count;
+                    connectBonusSum += getConnectBonus(g.count);
+                    colorsErased.add(g.color);
+                }
+
+                let colorBonus = getColorBonus(colorsErased.size);
+                let chainBonus = getChainBonus(currentChain);
+                
+                let totalBonus = chainBonus + connectBonusSum + colorBonus;
+                if (totalBonus === 0) totalBonus = 1;
+                if (totalBonus > 999) totalBonus = 999;
+                
+                let stepScore = totalErasedCount * totalBonus * 10;
+                chainTotalScore += stepScore;
+
+                let sumX = 0, sumY = 0;
+                for (let pos of toErase) {
+                    sumX += pos.x; sumY += pos.y;
+                    board[pos.y][pos.x].isPopping = true;
+                }
+                
+                render();
+                showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain);
+
+                await sleep(1000);
+
+                for (let pos of toErase) {
+                    if (board[pos.y][pos.x]) {
+                        let id = board[pos.y][pos.x].id;
+                        let el = document.getElementById('puyo-' + id);
+                        if (el) el.remove();
+                        board[pos.y][pos.x] = null;
+                    }
+                }
+                
+                render();
+                movedIds = await applyGravity();
+                if (movedIds.length > 0) {
+                    render();
+                    await sleep(200);
+                    movedIds.forEach(id => unconnectedIds.delete(id));
+                    render();
+                }
+            }
+
+            if (currentChain > 0) {
+                currentScore = chainTotalScore;
+                if (currentScore > maxScore) {
+                    maxScore = currentScore;
+                }
+                updateStatsUI();
+            }
+
+            if (currentChain > 0 && isBoardEmpty()) {
+                currentAllClearCount++;
+                if (currentAllClearCount > maxAllClearCount) maxAllClearCount = currentAllClearCount;
+                updateStatsUI();
+                showAllClearPopup();
+                triggerVibration([50, 30, 50]);
+                await sleep(1200);
+            }
+
+            isAnimating = false;
+            if (!isGameOver) {
+                spawnPiece();
+                render();
+            }
+        }
+
+        function showChainPopup(gridX, gridY, chainNumber) {
+            const layer = document.getElementById('puyoLayer');
+            const popup = document.createElement('div');
+            popup.className = 'chain-num-popup';
+            popup.innerText = `${chainNumber}`;
+            popup.style.left = `clamp(20px, calc(var(--cell-size) * ${gridX + 0.5}), calc(var(--cell-size) * 6 - 20px))`;
+            popup.style.top = `clamp(20px, calc(var(--cell-size) * ${gridY + 0.5}), calc(var(--cell-size) * 13 - 20px))`;
+            layer.appendChild(popup);
+            setTimeout(() => { if (popup.parentNode) popup.remove(); }, 1000);
+        }
+
+        function showAllClearPopup() {
+            const layer = document.getElementById('puyoLayer');
+            const popup = document.createElement('div');
+            popup.className = 'all-clear-popup';
+            popup.innerText = '全消し';
+            layer.appendChild(popup);
+            setTimeout(() => { if (popup.parentNode) popup.remove(); }, 1000);
+        }
+
+        function updateStatsUI() {
+            document.getElementById('currScoreDisp').innerText = currentScore;
+            document.getElementById('maxScoreDisp').innerText = maxScore;
+            document.getElementById('totalPoppedDisp').innerText = totalPoppedCount;
+            document.getElementById('maxAllClearDisp').innerText = maxAllClearCount;
+            document.getElementById('maxChainDisp').innerText = maxChainCount;
+        }
+
+        function render(isFalling = false) {
+            const layer = document.getElementById('puyoLayer');
+            const currentIds = new Set();
+
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    if (board[y][x]) {
+                        const item = board[y][x];
+                        const domId = 'puyo-' + item.id;
+                        currentIds.add(domId);
+
+                        let conn = { t:0, r:0, b:0, l:0 };
+                        if (!unconnectedIds.has(item.id)) {
+                            if (y > 0 && board[y-1][x] && board[y-1][x].color === item.color && !unconnectedIds.has(board[y-1][x].id)) conn.t = 1;
+                            if (y < ROWS-1 && board[y+1][x] && board[y+1][x].color === item.color && !unconnectedIds.has(board[y+1][x].id)) conn.b = 1;
+                            if (x > 0 && board[y][x-1] && board[y][x-1].color === item.color && !unconnectedIds.has(board[y][x-1].id)) conn.l = 1;
+                            if (x < COLS-1 && board[y][x+1] && board[y][x+1].color === item.color && !unconnectedIds.has(board[y][x+1].id)) conn.r = 1;
+                        }
+                        
+                        let connStr = `${conn.t}${conn.r}${conn.b}${conn.l}`;
+
+                        let el = document.getElementById(domId);
+                        if (!el) { el = document.createElement('div'); el.id = domId; el.className = 'puyo-item'; layer.appendChild(el); }
+                        
+                        if (el.getAttribute('data-conn') !== connStr) {
+                            el.innerHTML = createPuyoSVG(item.color, false, conn);
+                            el.setAttribute('data-conn', connStr);
+                        }
+
+                        el.className = 'puyo-item' + (isFalling ? ' falling' : '');
+                        el.style.left = `calc(var(--cell-size) * ${x})`;
+                        el.style.top = `calc(var(--cell-size) * ${y})`;
+                        el.style.transform = 'none';
+
+                        if (item.isPopping) el.classList.add('puyo-pop');
+                    }
+                }
+            }
+
+            if (activePiece) {
+                const subPos = getSubPos(activePiece);
+                let activeConnMain = { t:0, r:0, b:0, l:0 }, activeConnSub = { t:0, r:0, b:0, l:0 };
+
+                if (!isAnimating) {
+                    let ghostDrop = 0;
+                    while (true) {
+                        let test = { ...activePiece, y: activePiece.y + ghostDrop + 1 };
+                        if (canPlacePiece(test)) ghostDrop++; else break;
+                    }
+                    
+                    const gMainId = 'ghost-main', gSubId = 'ghost-sub';
+                    currentIds.add(gMainId); currentIds.add(gSubId);
+
+                    let gMain = document.getElementById(gMainId);
+                    if (!gMain) { gMain = document.createElement('div'); gMain.id = gMainId; gMain.className = 'puyo-item ghost'; layer.appendChild(gMain); }
+                    let gMainConnStr = `${activeConnMain.t}${activeConnMain.r}${activeConnMain.b}${activeConnMain.l}`;
+                    if (gMain.getAttribute('data-conn') !== gMainConnStr) { gMain.innerHTML = createPuyoSVG(activePiece.main.color, true, activeConnMain); gMain.setAttribute('data-conn', gMainConnStr); }
+
+                    let gSub = document.getElementById(gSubId);
+                    if (!gSub) { gSub = document.createElement('div'); gSub.id = gSubId; gSub.className = 'puyo-item ghost'; layer.appendChild(gSub); }
+                    let gSubConnStr = `${activeConnSub.t}${activeConnSub.r}${activeConnSub.b}${activeConnSub.l}`;
+                    if (gSub.getAttribute('data-conn') !== gSubConnStr) { gSub.innerHTML = createPuyoSVG(activePiece.sub.color, true, activeConnSub); gSub.setAttribute('data-conn', gSubConnStr); }
+
+                    gMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`;
+                    gMain.style.top = `calc(var(--cell-size) * ${activePiece.y + ghostDrop})`;
+                    gMain.style.transform = 'none';
+                    gSub.style.left = `calc(var(--cell-size) * ${subPos.x})`;
+                    gSub.style.top = `calc(var(--cell-size) * ${subPos.y + ghostDrop})`;
+                    gSub.style.transform = 'none';
+                }
+
+                const aMainDomId = 'puyo-' + activePiece.main.id;
+                const aSubDomId = 'puyo-' + activePiece.sub.id;
+                currentIds.add(aMainDomId); currentIds.add(aSubDomId);
+
+                let aMain = document.getElementById(aMainDomId);
+                if (!aMain) { aMain = document.createElement('div'); aMain.id = aMainDomId; layer.appendChild(aMain); }
+                let aMainConnStr = `${activeConnMain.t}${activeConnMain.r}${activeConnMain.b}${activeConnMain.l}`;
+                if (aMain.getAttribute('data-conn') !== aMainConnStr) { aMain.innerHTML = createPuyoSVG(activePiece.main.color, false, activeConnMain); aMain.setAttribute('data-conn', aMainConnStr); }
+                
+                let aSub = document.getElementById(aSubDomId);
+                if (!aSub) { aSub = document.createElement('div'); aSub.id = aSubDomId; layer.appendChild(aSub); }
+                let aSubConnStr = `${activeConnSub.t}${activeConnSub.r}${activeConnSub.b}${activeConnSub.l}`;
+                if (aSub.getAttribute('data-conn') !== aSubConnStr) { aSub.innerHTML = createPuyoSVG(activePiece.sub.color, false, activeConnSub); aSub.setAttribute('data-conn', aSubConnStr); }
+
+                const axisClass = activePiece.isLanded ? '' : ' axis-puyo';
+                aMain.className = 'puyo-item' + axisClass + (isFalling ? ' falling' : '');
+                aSub.className = 'puyo-item' + (isFalling ? ' falling' : ' rotating');
+                aMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`;
+                aMain.style.top = `calc(var(--cell-size) * ${activePiece.y})`;
+                aMain.style.transform = 'none';
+                aSub.style.left = `calc(var(--cell-size) * ${subPos.x})`;
+                aSub.style.top = `calc(var(--cell-size) * ${subPos.y})`;
+                aSub.style.transform = 'none';
+            }
+
+            Array.from(layer.children).forEach(el => {
+                if (!el.classList.contains('chain-num-popup') && !el.classList.contains('all-clear-popup') && !currentIds.has(el.id)) el.remove();
+            });
+
+            if (puyoQueue.length >= 2) {
+                const updateNext = (id, color, conn) => {
+                    let el = document.getElementById(id);
+                    let stateStr = `${color}_${conn.t}${conn.r}${conn.b}${conn.l}`;
+                    if (el.getAttribute('data-state') !== stateStr) { el.innerHTML = createPuyoSVG(color, false, conn); el.setAttribute('data-state', stateStr); }
+                };
+                updateNext('next1Main', puyoQueue[0].main, {t:0,r:0,b:0,l:0});
+                updateNext('next1Sub', puyoQueue[0].sub, {t:0,r:0,b:0,l:0});
+                updateNext('next2Main', puyoQueue[1].main, {t:0,r:0,b:0,l:0});
+                updateNext('next2Sub', puyoQueue[1].sub, {t:0,r:0,b:0,l:0});
+            }
+        }
+
+        let touchStartX = 0, touchStartY = 0, touchLastX = 0, touchStartTime = 0, isGameGesture = false, hasSwiped = false;
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.left-panel, .right-panel, button, .modal-card, .top-bar')) { isGameGesture = false; return; }
+            isGameGesture = true; hasSwiped = false;
+            const t = e.touches[0];
+            touchStartX = touchLastX = t.clientX; touchStartY = t.clientY; touchStartTime = Date.now();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isGameGesture) return;
+            e.preventDefault(); 
+            const t = e.touches[0];
+            const dyTotal = t.clientY - touchStartY, dxStep = t.clientX - touchLastX;
+
+            if (dyTotal > 35 && !hasSwiped) { hasSwiped = true; dropPiece(); return; }
+            if (dyTotal < -35 && !hasSwiped) { hasSwiped = true; undo(); return; }
+
+            const cellWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) || 40;
+            if (Math.abs(dxStep) >= cellWidth * 0.5) {
+                hasSwiped = true;
+                if (dxStep < 0) movePiece(-1);
+                else if (dxStep > 0) movePiece(1);
+                touchLastX = t.clientX;
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!isGameGesture) return;
+            const dt = Date.now() - touchStartTime, t = e.changedTouches[0];
+            const dxTotal = t.clientX - touchStartX, dyTotal = t.clientY - touchStartY;
+
+            if (!hasSwiped && Math.abs(dxTotal) < 15 && Math.abs(dyTotal) < 15 && dt < 300) {
+                if (t.clientX < window.innerWidth / 2) rotatePiece(-1);
+                else rotatePiece(1);
+            }
+            isGameGesture = false;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (["a", "A", "d", "D", "s", "S", "q", "Q", "e", "E", "/", "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp"].includes(e.key)) { e.preventDefault(); }
+            switch(e.key) {
+                case 'a': case 'A': case 'ArrowLeft': movePiece(-1); break;
+                case 'd': case 'D': case 'ArrowRight': movePiece(1); break;
+                case 's': case 'S': case 'ArrowDown': dropPiece(); break;
+                case 'q': case 'Q': case '/': rotatePiece(-1); break;
+                case 'e': case 'E': case 'ArrowUp': rotatePiece(1); break;
+            }
+        });
+
+        // 起動時：保存データがあればロードして途中再開、なければリセットダイアログ表示
+        window.onload = () => {
+            if (!loadResumeData()) {
+                startGame();
+                openResetModal();
+            }
+        };
+    </script>
+</body>
+</html>
