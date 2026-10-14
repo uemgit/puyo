@@ -43,6 +43,7 @@
             position: relative;
         }
 
+        /* 上部スコアバー：右側パネルとデザインを統一 */
         .top-bar {
             display: flex;
             justify-content: center;
@@ -57,7 +58,7 @@
         .score-box {
             flex: 1;
             min-width: 0;
-            margin-bottom: 0;
+            margin-bottom: 0; /* panel-boxのmargin-bottomを上書き */
             padding: 5px 8px;
         }
 
@@ -144,6 +145,7 @@
         .ac-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
         .max-chain-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
 
+        /* ウッディな画面にマッチするボタンデザイン */
         .side-act-btn {
             width: 100%;
             border: 2px solid #3d2314;
@@ -566,7 +568,6 @@
             } catch (e) { return false; }
         }
 
-        /* 元通りの安定したSVG描画関数 */
         function createPuyoSVG(colorIndex, isGhost = false, conn = {t:0, r:0, b:0, l:0}) {
             if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
             const theme = MASTER_PUYO_THEMES[colorIndex];
@@ -579,23 +580,10 @@
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
             const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
             let connFill = "", connStroke = "";
-            
-            if (conn.r) { 
-                connFill += `<rect x="22.5" y="14" width="23.5" height="24" fill="${theme.base}" />`; 
-                connStroke += `<line x1="37.5" y1="14" x2="46" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="38" x2="46" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; 
-            }
-            if (conn.l) { 
-                connFill += `<rect x="-1" y="14" width="24" height="24" fill="${theme.base}" />`; 
-                connStroke += `<line x1="-1" y1="14" x2="7.5" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="-1" y1="38" x2="7.5" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; 
-            }
-            if (conn.b) { 
-                connFill += `<rect x="7.5" y="22.5" width="30" height="23.5" fill="${theme.base}" />`; 
-                connStroke += `<line x1="7.5" y1="34" x2="7.5" y2="46" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="34" x2="37.5" y2="46" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; 
-            }
-            if (conn.t) { 
-                connFill += `<rect x="7.5" y="-1" width="30" height="24" fill="${theme.base}" />`; 
-                connStroke += `<line x1="7.5" y1="-1" x2="7.5" y2="11" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="-1" x2="37.5" y2="11" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; 
-            }
+            if (conn.r) { connFill += `<rect x="22.5" y="14" width="24" height="24" fill="${theme.base}" />`; connStroke += `<line x1="37" y1="14" x2="46" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" /><line x1="39" y1="38" x2="46" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`; }
+            if (conn.l) { connFill += `<rect x="-1" y="14" width="24" height="24" fill="${theme.base}" />`; connStroke += `<line x1="-1" y1="14" x2="8" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" /><line x1="-1" y1="38" x2="6" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`; }
+            if (conn.b) { connFill += `<rect x="7.5" y="25" width="30" height="21" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="36" x2="7.5" y2="46" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" /><line x1="37.5" y1="36" x2="37.5" y2="46" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`; }
+            if (conn.t) { connFill += `<rect x="7.5" y="-1" width="30" height="20" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="-1" x2="7.5" y2="10" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" /><line x1="37.5" y1="-1" x2="37.5" y2="10" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`; }
             return `<div class="puyo-inner"><svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;"><path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="2.5" stroke-linejoin="round" />${connFill}${connStroke}${highlightHTML}${isGhost ? '' : centeredEyesHTML}<path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" /></svg></div>`;
         }
 
