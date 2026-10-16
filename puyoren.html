@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Puyo Chain Practice</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 45 45%22%3E%3Cpath d=%22M22.5 7C12 7 4 14 2.5 23 1 34 7 42 22.5 42S44 34 42.5 23 33 7 22.5 7Z%22 fill=%22%23ff1744%22 stroke=%22%23880015%22 stroke-width=%222.5%22 stroke-linejoin=%22round%22/%3E%3Cellipse cx=%2212%22 cy=%2214%22 rx=%226%22 ry=%223%22 fill=%22white%22 opacity=%22.6%22 transform=%22rotate(-25 12 14)%22/%3E%3Ccircle cx=%2215.5%22 cy=%2225%22 r=%226%22 fill=%22white%22 stroke=%22%23880015%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2229.5%22 cy=%2225%22 r=%226%22 fill=%22white%22 stroke=%22%23880015%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2215.5%22 cy=%2225%22 r=%222%22 fill=%22%230f172a%22/%3E%3Ccircle cx=%2229.5%22 cy=%2225%22 r=%222%22 fill=%22%230f172a%22/%3E%3C/svg%3E">
     <style>
         * {
             box-sizing: border-box;
@@ -83,7 +84,7 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
-            gap: 16px;
+            gap: 8px;
             width: 46px;
             height: calc(var(--cell-size) * 13 + 10px);
             flex-shrink: 0;
@@ -122,117 +123,63 @@
             margin-bottom: 6px;
         }
 
-        .panel-box-next2 {
-            margin-bottom: 14px;
-        }
-
-        .panel-lbl {
-            font-size: 7.5px;
-            font-weight: 800;
-            color: #4a270f;
-            letter-spacing: -0.2px;
-            margin-bottom: 2px;
-            white-space: nowrap;
-        }
-
-        .stat-val {
-            font-size: clamp(16px, 2.6vh, 22px);
-            font-weight: 900;
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
-        }
-
+        .panel-box-next2 { margin-bottom: 14px; }
+        .panel-lbl { font-size: 7.5px; font-weight: 800; color: #4a270f; letter-spacing: -0.2px; margin-bottom: 2px; white-space: nowrap; }
+        .stat-val { font-size: clamp(16px, 2.6vh, 22px); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
         .curr-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
         .ac-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
         .max-chain-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
 
         .side-act-btn {
-            width: 100%;
-            border: 2px solid #3d2314;
-            border-radius: 8px;
-            font-weight: 800;
-            color: #fffbeb;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1px;
+            width: 100%; border: 2px solid #3d2314; border-radius: 8px; font-weight: 800; color: #fffbeb; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
             box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
-            transition: transform 0.08s, background 0.15s;
-            pointer-events: auto;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+            transition: transform 0.08s, background 0.15s; pointer-events: auto; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
         }
-
         .side-act-btn:active { transform: scale(0.92); }
         .side-act-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-        .btn-reset { 
-            background: linear-gradient(180deg, #993322 0%, #5e1c12 100%); 
-            padding: 8px 2px; 
-            font-size: 10px; 
-            border-color: #3d2314; 
-        }
-        .btn-undo { 
-            background: linear-gradient(180deg, #8c5227 0%, #522d12 100%); 
-            padding: 10px 2px; 
-            font-size: 11px; 
-            font-weight: 900; 
-            border-color: #3d2314; 
-        }
+        .btn-reset { background: linear-gradient(180deg, #993322 0%, #5e1c12 100%); padding: 8px 2px; font-size: 10px; border-color: #3d2314; }
+        .btn-undo { background: linear-gradient(180deg, #8c5227 0%, #522d12 100%); padding: 10px 2px; font-size: 11px; font-weight: 900; border-color: #3d2314; }
+        .gravity-control { width: 100%; gap: 3px; padding: 4px 2px; margin-bottom: 0; }
+        .gravity-control .panel-lbl { font-size: 10px; }
+        .gravity-step-btn { width: 100%; height: 44px; border: 1px solid #3d2314; border-radius: 5px; background: linear-gradient(180deg, #8c5227 0%, #522d12 100%); color: #fffbeb; font-size: 18px; font-weight: 900; cursor: pointer; }
+        .gravity-step-btn:active { transform: scale(0.92); }
+        .gravity-step-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .gravity-level { color: #ffffff; font-size: 16px; font-weight: 900; line-height: 1.2; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); white-space: nowrap; }
 
         .board {
-            position: relative;
-            width: calc(var(--cell-size) * 6 + 10px);
-            height: calc(var(--cell-size) * 13 + 10px);
-            background: #a36d39;
-            border: 5px solid #3d2314;
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(61, 35, 20, 0.4), inset 0 0 12px rgba(0, 0, 0, 0.35);
-            flex-shrink: 0;
-            overflow: hidden;
+            position: relative; width: calc(var(--cell-size) * 6 + 10px); height: calc(var(--cell-size) * 13 + 10px);
+            background: #a36d39; border: 5px solid #3d2314; border-radius: 12px;
+            box-shadow: 0 0 15px rgba(61, 35, 20, 0.4), inset 0 0 12px rgba(0, 0, 0, 0.35); flex-shrink: 0; overflow: hidden;
         }
 
-        .grid-layer {
-            position: absolute;
-            inset: 0;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            grid-template-rows: repeat(13, 1fr);
-            pointer-events: none;
-        }
-
+        .grid-layer { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(13, 1fr); pointer-events: none; }
         .grid-cell { border-right: 1px solid rgba(61, 35, 20, 0.18); border-bottom: 1px solid rgba(61, 35, 20, 0.18); }
         .grid-cell:nth-child(6n) { border-right: none; }
         .grid-cell:nth-last-child(-n+6) { border-bottom: none; }
 
         .death-line {
-            position: absolute;
-            top: calc(var(--cell-size) * 1);
-            left: 0; right: 0; height: 0;
-            border-top: 2px dashed #ef4444;
-            box-shadow: 0 0 8px rgba(239, 68, 68, 0.9);
-            pointer-events: none;
-            z-index: 15;
+            position: absolute; top: calc(var(--cell-size) * 1); left: 0; right: 0; height: 0;
+            border-top: 2px dashed #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.9); pointer-events: none; z-index: 15;
         }
 
         #puyoLayer { position: absolute; inset: 0; pointer-events: none; }
 
         .puyo-item {
-            position: absolute;
-            width: var(--cell-size); height: var(--cell-size);
-            padding: 1px;
-            will-change: left, top, transform;
-            transition: left 0.08s ease-out, top 0.08s ease-out;
+            position: absolute; width: var(--cell-size); height: var(--cell-size); padding: 1px;
+            will-change: left, top, transform; 
+            transition: left 0.08s ease-out, top 0.08s linear, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); 
             z-index: 10;
         }
-        .puyo-item.falling { transition: top 0.12s cubic-bezier(0.25, 0.1, 0.25, 1), left 0.08s ease-out; }
+        
+        .puyo-item.active-puyo { transition: left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .puyo-item.falling { transition: top 0.12s cubic-bezier(0.25, 0.1, 0.25, 1), left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) !important; }
         .puyo-item.ghost { opacity: 0.35; filter: saturate(0.6); z-index: 5; }
+        .puyo-item.active-sub-puyo { z-index: 12; transition: left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
         .puyo-inner {
-            width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            transform-origin: center center;
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center center;
         }
         .puyo-pop .puyo-inner { animation: slowPopAnim 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
         @keyframes slowPopAnim {
@@ -241,58 +188,31 @@
             100% { transform: scale(0.1); filter: brightness(1.8); opacity: 0; }
         }
 
-        /* 着地時のゼリーのプルンアニメーション */
-        .puyo-landing .puyo-inner {
-            animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            transform-origin: center bottom;
-        }
+        .puyo-item.puyo-landing:not(.active-puyo) { transition: none !important; }
+        .puyo-landing .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
         @keyframes jellyLandingAnim {
-            0% { transform: scale(1, 1); }
-            30% { transform: scale(1.28, 0.72); }
-            60% { transform: scale(0.88, 1.12); }
-            85% { transform: scale(1.04, 0.96); }
-            100% { transform: scale(1, 1); }
+            0% { transform: scale(1, 1); } 30% { transform: scale(1.28, 0.72); } 60% { transform: scale(0.88, 1.12); } 85% { transform: scale(1.04, 0.96); } 100% { transform: scale(1, 1); }
         }
 
         .axis-glow { display: none; }
         .axis-puyo .axis-glow { display: block; animation: axisGlowAnim 0.3s infinite alternate ease-in-out; }
-        @keyframes axisGlowAnim {
-            0% { opacity: 0.2; stroke-width: 1.5; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5)); }
-            100% { opacity: 1; stroke-width: 3.5; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1)); }
-        }
+        @keyframes axisGlowAnim { 0% { opacity: 0.2; stroke-width: 1.5; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5)); } 100% { opacity: 1; stroke-width: 3.5; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1)); } }
 
         .chain-num-popup {
-            position: absolute; transform: translate(-50%, -50%);
-            font-size: clamp(28px, 5vh, 42px); font-weight: 900; color: #fef08a;
+            position: absolute; transform: translate(-50%, -50%); font-size: clamp(28px, 5vh, 42px); font-weight: 900; color: #fef08a;
             text-shadow: 0 0 6px #000, 0 0 12px #ca8a04, 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
-            z-index: 50; pointer-events: none;
-            animation: floatChainNum 1.4s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
+            z-index: 50; pointer-events: none; animation: floatChainNum 1.4s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
         }
-        @keyframes floatChainNum {
-            0% { transform: translate(-50%, -20%) scale(0.5); opacity: 0; }
-            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            80% { transform: translate(-50%, -70%) scale(1.0); opacity: 1; }
-            100% { transform: translate(-50%, -90%) scale(0.8); opacity: 0; }
-        }
+        @keyframes floatChainNum { 0% { transform: translate(-50%, -20%) scale(0.5); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 80% { transform: translate(-50%, -70%) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -90%) scale(0.8); opacity: 0; } }
 
         .all-clear-popup {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: clamp(32px, 6vh, 48px); font-weight: 900; color: #fef08a;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: clamp(32px, 6vh, 48px); font-weight: 900; color: #fef08a;
             text-shadow: 0 0 10px #000, 0 0 20px #eab308, 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
-            z-index: 55; pointer-events: none; white-space: nowrap;
-            animation: popAllClear 1.0s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            z-index: 55; pointer-events: none; white-space: nowrap; animation: popAllClear 1.0s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-        @keyframes popAllClear {
-            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
-            20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-            80% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
-        }
+        @keyframes popAllClear { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
 
-        .preview-box {
-            background: rgba(163, 109, 57, 0.8); border-radius: 6px; padding: 2px;
-            display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%;
-        }
+        .preview-box { background: rgba(163, 109, 57, 0.8); border-radius: 6px; padding: 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; }
         .puyo-preview-cell-next { width: calc(var(--cell-size) * 0.78); height: calc(var(--cell-size) * 0.78); }
         .puyo-preview-cell-next2 { width: calc(var(--cell-size) * 0.62); height: calc(var(--cell-size) * 0.62); }
 
@@ -302,8 +222,7 @@
 
         .game-over-mask {
             position: absolute; inset: 0; background: rgba(163, 109, 57, 0.9); backdrop-filter: blur(4px);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 60; border-radius: 8px; gap: 16px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 60; border-radius: 8px; gap: 16px;
         }
         .game-over-mask.hidden { display: none; }
         .game-over-text { font-size: 24px; font-weight: 900; color: #dc2626; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4); }
@@ -314,76 +233,37 @@
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card {
-            background: #a36d39; border: 3px solid #3d2314; border-radius: 16px; padding: 24px;
-            width: 85%; max-width: 320px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
-            display: flex; flex-direction: column; align-items: center; gap: 16px; transform: scale(0.9); transition: transform 0.2s;
+            background: #a36d39; border: 3px solid #3d2314; border-radius: 16px; padding: 24px; width: 85%; max-width: 320px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; align-items: center; gap: 14px; transform: scale(0.9); transition: transform 0.2s;
         }
         .modal-overlay.active .modal-card { transform: scale(1); }
         .modal-title { font-size: 18px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
-        .modal-desc { font-size: 13px; color: #fffbeb; text-align: center; line-height: 1.4; text-shadow: 0 1px 2px rgba(0,0,0,0.4); margin-bottom: -4px;}
-        .modal-btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        
+        .toggle-label { display: flex; align-items: center; gap: 10px; cursor: pointer; color: #ffffff; font-size: 14px; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+        .toggle-checkbox { display: none; }
+        .toggle-slider { position: relative; width: 44px; height: 24px; background-color: #713f12; border-radius: 20px; transition: 0.3s; border: 2px solid #3d2314; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+        .toggle-slider::before { content: ""; position: absolute; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: #e5e5e5; border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+        .toggle-checkbox:checked + .toggle-slider { background-color: #22c55e; border-color: #14532d; }
+        .toggle-checkbox:checked + .toggle-slider::before { transform: translateX(20px); background-color: #ffffff; }
+
+        .modal-btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 2px; }
         .modal-choice-btn {
-            width: 100%; padding: 12px 0; border-radius: 10px; border: none; font-size: 15px; font-weight: 800; color: #ffffff; cursor: pointer; transition: transform 0.1s;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+            width: 100%; padding: 12px 0; border-radius: 10px; border: none; font-size: 15px; font-weight: 800; color: #ffffff; cursor: pointer; transition: transform 0.1s; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
         .modal-choice-btn:active { transform: scale(0.96); }
-        
         .btn-mode-3 { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); border: 1px solid #fb7185; }
         .btn-mode-4 { background: linear-gradient(135deg, #f97316 0%, #c2410c 100%); border: 1px solid #fb923c; }
         .btn-mode-5 { background: linear-gradient(135deg, #9f383d 0%, #5e1c20 100%); border: 1px solid #e2888c; }
         
-        .modal-cancel-btn { background: transparent; border: none; color: #3d2314; font-size: 13px; font-weight: 800; cursor: pointer; padding: 4px 8px; }
-
-        .modal-toggle-box {
+        .score-reset-container {
             display: flex;
-            align-items: center;
             justify-content: center;
-            width: 100%;
-            margin-bottom: 4px;
-        }
-        .toggle-label {
-            display: flex;
             align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            color: #ffffff;
-            font-size: 13px;
-            font-weight: 800;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+            width: 100%;
+            padding-top: 4px;
         }
-        .toggle-checkbox {
-            display: none;
-        }
-        .toggle-slider {
-            position: relative;
-            width: 44px;
-            height: 24px;
-            background-color: #713f12;
-            border-radius: 20px;
-            transition: 0.3s;
-            border: 2px solid #3d2314;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
-        }
-        .toggle-slider::before {
-            content: "";
-            position: absolute;
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: #e5e5e5;
-            border-radius: 50%;
-            transition: 0.3s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-        }
-        .toggle-checkbox:checked + .toggle-slider {
-            background-color: #22c55e;
-            border-color: #14532d;
-        }
-        .toggle-checkbox:checked + .toggle-slider::before {
-            transform: translateX(20px);
-            background-color: #ffffff;
-        }
+
+        .modal-cancel-btn { background: transparent; border: none; color: #3d2314; font-size: 13px; font-weight: 800; cursor: pointer; padding: 2px 8px; margin-top: -2px;}
     </style>
 </head>
 <body>
@@ -391,33 +271,24 @@
     <div class="app-container">
         
         <div class="top-bar">
-            <div class="panel-box score-box">
-                <span class="panel-lbl">SCORE</span>
-                <span id="currScoreDisp" class="stat-val curr-val">0</span>
-            </div>
-            <div class="panel-box score-box">
-                <span class="panel-lbl">HI-SCORE</span>
-                <span id="maxScoreDisp" class="stat-val hi-score-val">0</span>
-            </div>
+            <div class="panel-box score-box"><span class="panel-lbl">SCORE</span><span id="currScoreDisp" class="stat-val curr-val">0</span></div>
+            <div class="panel-box score-box"><span class="panel-lbl">HI-SCORE</span><span id="maxScoreDisp" class="stat-val hi-score-val">0</span></div>
         </div>
 
         <div class="stage-area">
             <div class="left-panel">
-                <button class="side-act-btn btn-reset" onclick="openResetModal()">
-                    <span style="font-size: 12px;">↻</span>
-                    <span>リセット</span>
-                </button>
-                <button id="undoBtn" class="side-act-btn btn-undo" onclick="undo()">
-                    <span style="font-size: 13px;">↩</span>
-                    <span>戻す</span>
-                </button>
+                <button class="side-act-btn btn-reset" onclick="openResetModal()"><span style="font-size: 12px;">↻</span><span>リセット</span></button>
+                <button id="undoBtn" class="side-act-btn btn-undo" onclick="undo()"><span style="font-size: 13px;">↩</span><span>戻す</span></button>
+                <div class="panel-box gravity-control" aria-label="ぷよの自動落下速度">
+                    <span class="panel-lbl">落下</span>
+                    <button id="gravityUpBtn" class="gravity-step-btn" type="button" aria-label="落下速度を下げる" onclick="changeGravityLevel(-1)">▲</button>
+                    <output id="gravityLevelDisp" class="gravity-level" aria-live="polite">OFF</output>
+                    <button id="gravityDownBtn" class="gravity-step-btn" type="button" aria-label="落下速度を上げる" onclick="changeGravityLevel(1)">▼</button>
+                </div>
             </div>
 
             <div id="boardContainer" class="board">
-                <div class="tap-guide-overlay">
-                    <div class="tap-zone-left"></div>
-                    <div class="tap-zone-right"></div>
-                </div>
+                <div class="tap-guide-overlay"><div class="tap-zone-left"></div><div class="tap-zone-right"></div></div>
                 <div class="grid-layer" id="gridBg"></div>
                 <div class="death-line"></div>
                 <div id="puyoLayer"></div>
@@ -429,32 +300,11 @@
 
             <div class="right-panel">
                 <div class="right-top">
-                    <div class="panel-box">
-                        <span class="panel-lbl">NEXT</span>
-                        <div class="preview-box">
-                            <div id="next1Sub" class="puyo-preview-cell-next"></div>
-                            <div id="next1Main" class="puyo-preview-cell-next"></div>
-                        </div>
-                    </div>
-                    <div class="panel-box panel-box-next2" style="opacity: 0.9;">
-                        <span class="panel-lbl">NEXT2</span>
-                        <div class="preview-box">
-                            <div id="next2Sub" class="puyo-preview-cell-next2"></div>
-                            <div id="next2Main" class="puyo-preview-cell-next2"></div>
-                        </div>
-                    </div>
-                    <div class="panel-box">
-                        <span class="panel-lbl">ぷよ消し数</span>
-                        <span id="totalPoppedDisp" class="stat-val curr-val">0</span>
-                    </div>
-                    <div class="panel-box">
-                        <span class="panel-lbl">全消し数</span>
-                        <span id="maxAllClearDisp" class="stat-val ac-val">0</span>
-                    </div>
-                    <div class="panel-box">
-                        <span class="panel-lbl">最大連鎖</span>
-                        <span id="maxChainDisp" class="stat-val max-chain-val">0</span>
-                    </div>
+                    <div class="panel-box"><span class="panel-lbl">NEXT</span><div class="preview-box"><div id="next1Sub" class="puyo-preview-cell-next"></div><div id="next1Main" class="puyo-preview-cell-next"></div></div></div>
+                    <div class="panel-box panel-box-next2" style="opacity: 0.9;"><span class="panel-lbl">NEXT2</span><div class="preview-box"><div id="next2Sub" class="puyo-preview-cell-next2"></div><div id="next2Main" class="puyo-preview-cell-next2"></div></div></div>
+                    <div class="panel-box"><span class="panel-lbl">ぷよ消し数</span><span id="totalPoppedDisp" class="stat-val curr-val">0</span></div>
+                    <div class="panel-box"><span class="panel-lbl">全消し数</span><span id="maxAllClearDisp" class="stat-val ac-val">0</span></div>
+                    <div class="panel-box"><span class="panel-lbl">最大連鎖</span><span id="maxChainDisp" class="stat-val max-chain-val">0</span></div>
                 </div>
             </div>
         </div>
@@ -462,22 +312,22 @@
 
     <div id="resetModal" class="modal-overlay">
         <div class="modal-card">
-            <div class="modal-title">色数の選択</div>
-            <div class="modal-desc">練習する色数を選択して盤面をリセットします。</div>
-            
-            <div class="modal-toggle-box">
+            <div class="modal-title">ゲーム設定</div>
+
+        <div class="modal-btn-group">
+                <button class="modal-choice-btn btn-mode-3" onclick="confirmReset(3)">甘口（3色）で開始</button>
+                <button class="modal-choice-btn btn-mode-4" onclick="confirmReset(4)">中辛（4色）で開始</button>
+                <button class="modal-choice-btn btn-mode-5" onclick="confirmReset(5)">辛口（5色）で開始</button>
+            </div>
+
+            <div class="score-reset-container">
                 <label class="toggle-label">
                     <input type="checkbox" id="scoreResetToggle" class="toggle-checkbox">
                     <span class="toggle-slider"></span>
-                    <span class="toggle-text">記録もリセット</span>
+                    <span class="toggle-text">スコアもリセット</span>
                 </label>
             </div>
 
-            <div class="modal-btn-group">
-                <button class="modal-choice-btn btn-mode-3" onclick="confirmReset(3)">甘口（3色）</button>
-                <button class="modal-choice-btn btn-mode-4" onclick="confirmReset(4)">中辛（4色）</button>
-                <button class="modal-choice-btn btn-mode-5" onclick="confirmReset(5)">辛口（5色）</button>
-            </div>
             <button class="modal-cancel-btn" onclick="closeResetModal()">キャンセル</button>
         </div>
     </div>
@@ -486,129 +336,143 @@
         const COLS = 6;
         const ROWS = 13; 
         const SAVE_STORAGE_KEY = 'PUYO_CHAIN_PRACTICE_RESUME_DATA';
+        const LOCK_DELAY_MS = 530;
+        // const GRAVITY_INTERVALS = [0, 1500, 1000, 530, 400, 270];
+        const GRAVITY_INTERVALS = [0, 1200, 530, 270, 110, 60];
 
         const MASTER_PUYO_THEMES = {
-            1: { base: '#ef4444', stroke: '#7f1d1d' }, // 赤
-            2: { base: '#0ea5e9', stroke: '#0c4a6e' }, // 青
-            3: { base: '#22c55e', stroke: '#14532d' }, // 緑
-            4: { base: '#eab308', stroke: '#713f12' }, // 黄
-            5: { base: '#a855f7', stroke: '#4c1d95' }  // 紫
+            1: { base: '#ff1744', stroke: '#880015' }, 2: { base: '#0088ff', stroke: '#003299' }, 
+            3: { base: '#00c853', stroke: '#004d1a' }, 4: { base: '#ffd600', stroke: '#7c5900' }, 5: { base: '#d500f9', stroke: '#500075' }  
         };
 
         const ROTATIONS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
         const CHAIN_BONUS_TABLE = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
         
-        function getChainBonus(chain) {
-            if (chain <= 1) return 0;
-            if (chain < CHAIN_BONUS_TABLE.length) return CHAIN_BONUS_TABLE[chain];
-            return 512;
+        function getChainBonus(chain) { if (chain <= 1) return 0; if (chain < CHAIN_BONUS_TABLE.length) return CHAIN_BONUS_TABLE[chain]; return 512; }
+        function getConnectBonus(count) { if (count <= 4) return 0; if (count <= 10) return count - 3; return 10; }
+        function getColorBonus(colorCount) { if (colorCount <= 1) return 0; if (colorCount === 2) return 3; if (colorCount === 3) return 6; if (colorCount === 4) return 10; return 15; }
+        function triggerVibration(pattern) { if (typeof navigator !== 'undefined' && navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} } }
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        let activeColorPalette = [], board = [], puyoQueue = [], activePiece = null, historyStack = [];
+        let maxChainCount = 0, currentAllClearCount = 0, maxAllClearCount = 0, totalPoppedCount = 0, currentScore = 0, maxScore = 0;
+        let currentColorCount = 4, isAnimating = false, isGameOver = false, nextPuyoId = 1, unconnectedIds = new Set();
+        
+        let gravityLevel = 0, gravityEnabled = false, gravityInterval = 1500;
+        let gravityRAF = null, lastTime = null;
+
+        function updateGravityControl() {
+            document.getElementById('gravityLevelDisp').textContent = gravityLevel === 0 ? 'OFF' : `${gravityLevel}速`;
+            document.getElementById('gravityUpBtn').disabled = gravityLevel === 0;
+            document.getElementById('gravityDownBtn').disabled = gravityLevel === GRAVITY_INTERVALS.length - 1;
         }
 
-        function getConnectBonus(count) {
-            if (count <= 4) return 0;
-            if (count === 5) return 2;
-            if (count === 6) return 3;
-            if (count === 7) return 4;
-            if (count === 8) return 5;
-            if (count === 9) return 6;
-            if (count === 10) return 7;
-            if (count >= 11) return 10;
-            return 0;
+        function changeGravityLevel(step) {
+            gravityLevel = Math.max(0, Math.min(GRAVITY_INTERVALS.length - 1, gravityLevel + step));
+            gravityEnabled = gravityLevel > 0;
+            if (gravityEnabled) gravityInterval = GRAVITY_INTERVALS[gravityLevel];
+            stopGravity();
+            if ((gravityEnabled || activePiece?.isLanded) && activePiece && !isGameOver && !isAnimating) startGravity();
+            updateGravityControl();
+            render();
+            saveResumeData();
         }
 
-        function getColorBonus(colorCount) {
-            if (colorCount <= 1) return 0;
-            if (colorCount === 2) return 3;
-            if (colorCount === 3) return 6;
-            if (colorCount === 4) return 10;
-            if (colorCount >= 5) return 15;
-            return 0;
-        }
+        function gravityLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const delta = timestamp - lastTime;
+            lastTime = timestamp;
 
-        function triggerVibration(pattern) {
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                try { navigator.vibrate(pattern); } catch (e) { /* ignore */ }
+            if (gravityEnabled && !isGameOver && !isAnimating && activePiece) {
+                activePiece.fallProgress = (activePiece.fallProgress || 0) + (delta / gravityInterval);
+                
+                if (activePiece.fallProgress >= 1) {
+                    let steps = Math.floor(activePiece.fallProgress);
+                    activePiece.fallProgress -= steps;
+                    for (let i = 0; i < steps; i++) {
+                        if (canPlacePiece({ ...activePiece, y: activePiece.y + 1 })) {
+                            activePiece.y++;
+                        } else {
+                            activePiece.fallProgress = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (activePiece && !isGameOver && !isAnimating) {
+                const now = Date.now();
+                updateLandingState(now);
+                lockPieceIfReady(now);
+            }
+
+            if (!isAnimating) render();
+            if ((gravityEnabled || activePiece?.isLanded) && !isGameOver && !isAnimating && activePiece) {
+                gravityRAF = requestAnimationFrame(gravityLoop);
+            } else {
+                gravityRAF = null;
             }
         }
 
-        let activeColorPalette = [];
-        let board = [];
-        let puyoQueue = [];
-        let activePiece = null;
-        let historyStack = [];
-        
-        let maxChainCount = 0; 
-        let currentAllClearCount = 0;
-        let maxAllClearCount = 0;
-        let totalPoppedCount = 0;
-        
-        let currentScore = 0;
-        let maxScore = 0;
+        function startGravity() {
+            stopGravity();
+            if ((gravityEnabled || activePiece?.isLanded) && !isGameOver && !isAnimating && activePiece) {
+                lastTime = null;
+                gravityRAF = requestAnimationFrame(gravityLoop);
+            }
+        }
 
-        let currentColorCount = 4;
-        let isAnimating = false;
-        let isGameOver = false;
-        let nextPuyoId = 1;
-        
-        let unconnectedIds = new Set();
-
-        const sleep = ms => new Promise(res => setTimeout(res, ms));
+        function stopGravity() {
+            if (gravityRAF) { cancelAnimationFrame(gravityRAF); gravityRAF = null; }
+        }
 
         function saveResumeData() {
             try {
-                const data = {
-                    board: board, puyoQueue: puyoQueue, activeColorPalette: activeColorPalette, currentColorCount: currentColorCount,
-                    currentScore: currentScore, maxScore: maxScore, totalPoppedCount: totalPoppedCount, maxAllClearCount: maxAllClearCount, currentAllClearCount: currentAllClearCount, maxChainCount: maxChainCount, nextPuyoId: nextPuyoId, isGameOver: isGameOver,
-                    activePiece: activePiece ? { x: activePiece.x, y: activePiece.y, rot: activePiece.rot, angle: activePiece.angle, isLanded: activePiece.isLanded, main: { ...activePiece.main }, sub: { ...activePiece.sub } } : null
-                };
+                const data = { board, puyoQueue, activeColorPalette, currentColorCount, currentScore, maxScore, totalPoppedCount, maxAllClearCount, currentAllClearCount, maxChainCount, nextPuyoId, isGameOver, activePiece: activePiece ? { ...activePiece } : null, gravityLevel, gravityEnabled, gravityInterval };
                 localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(data));
             } catch (e) {}
         }
 
         function loadResumeData() {
             try {
-                const json = localStorage.getItem(SAVE_STORAGE_KEY);
-                if (!json) return false;
-                const data = JSON.parse(json);
-                if (!data || !data.board) return false;
+                const json = localStorage.getItem(SAVE_STORAGE_KEY); if (!json) return false;
+                const data = JSON.parse(json); if (!data || !data.board) return false;
                 board = data.board; puyoQueue = data.puyoQueue || []; currentColorCount = data.currentColorCount || 4;
                 if (Array.isArray(data.activeColorPalette) && data.activeColorPalette.length === currentColorCount) { activeColorPalette = [...data.activeColorPalette]; } else { pickColorPalette(); }
-                currentScore = data.currentScore || 0; maxScore = data.maxScore || 0; totalPoppedCount = data.totalPoppedCount || 0; maxAllClearCount = data.maxAllClearCount || 0; currentAllClearCount = data.currentAllClearCount || 0; maxChainCount = data.maxChainCount || 0; nextPuyoId = data.nextPuyoId || 1; isGameOver = !!data.isGameOver; activePiece = data.activePiece ? { ...data.activePiece } : null;
-                historyStack = []; unconnectedIds.clear(); isAnimating = false;
-                initGrid(); document.getElementById('puyoLayer').innerHTML = ''; updateStatsUI(); updateUndoBtn();
+                currentScore = data.currentScore || 0; maxScore = data.maxScore || 0; totalPoppedCount = data.totalPoppedCount || 0; maxAllClearCount = data.maxAllClearCount || 0; currentAllClearCount = data.currentAllClearCount || 0; maxChainCount = data.maxChainCount || 0; nextPuyoId = data.nextPuyoId || 1; isGameOver = !!data.isGameOver; 
+                activePiece = data.activePiece ? { ...data.activePiece, rot: data.activePiece.rot || 0, angle: data.activePiece.angle || 0, fallProgress: data.activePiece.fallProgress || 0 } : null;
+                if (activePiece) {
+                    activePiece.landedAt = activePiece.isLanded ? Date.now() : null;
+                    activePiece.isLanding = false;
+                }
+                if (Number.isInteger(data.gravityLevel) && data.gravityLevel >= 0 && data.gravityLevel < GRAVITY_INTERVALS.length) {
+                    gravityLevel = data.gravityLevel;
+                } else if (data.gravityEnabled) {
+                    const legacyLevel = [1500, 1000, 530, 400, 270].indexOf(Number(data.gravityInterval));
+                    gravityLevel = legacyLevel === -1 ? 1 : legacyLevel + 1;
+                } else {
+                    gravityLevel = 0;
+                }
+                gravityEnabled = gravityLevel > 0;
+                gravityInterval = gravityEnabled ? GRAVITY_INTERVALS[gravityLevel] : 1500;
+                updateGravityControl();
+                historyStack = []; unconnectedIds.clear(); isAnimating = false; initGrid(); document.getElementById('puyoLayer').innerHTML = ''; updateStatsUI(); updateUndoBtn();
                 if (isGameOver) { document.getElementById('gameOverMask').classList.remove('hidden'); } else { document.getElementById('gameOverMask').classList.add('hidden'); if (!activePiece) spawnPiece(); }
-                render(); return true;
+                render(); if (gravityEnabled || activePiece?.isLanded) startGravity(); return true;
             } catch (e) { return false; }
         }
 
         function createPuyoSVG(colorIndex, isGhost = false, conn = {t:0, r:0, b:0, l:0}) {
             if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
             const theme = MASTER_PUYO_THEMES[colorIndex];
-            const centeredEyesHTML = `
-                <circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" />
-                <circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" />
-                <circle cx="15.5" cy="25" r="2" fill="#0f172a" />
-                <circle cx="29.5" cy="25" r="2" fill="#0f172a" />
-            `;
+            const centeredEyesHTML = `<circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" />`;
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
             const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
             let connFill = "", connStroke = "";
-            if (conn.r) { 
-                connFill += `<rect x="22.5" y="14" width="23.5" height="24" fill="${theme.base}" />`; 
-                connStroke += `<line x1="37.5" y1="14" x2="45" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="38" x2="45" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; 
-            }
-            if (conn.l) { 
-                connFill += `<rect x="-1" y="14" width="24" height="24" fill="${theme.base}" />`; 
-                connStroke += `<line x1="0" y1="14" x2="7.5" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="0" y1="38" x2="7.5" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; 
-            }
-            if (conn.b) { 
-                connFill += `<rect x="7.5" y="22.5" width="30" height="23.5" fill="${theme.base}" />`; 
-                connStroke += `<line x1="7.5" y1="37.5" x2="7.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="37.5" x2="37.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; 
-            }
-            if (conn.t) { 
-                connFill += `<rect x="7.5" y="-1" width="30" height="24" fill="${theme.base}" />`; 
-                connStroke += `<line x1="7.5" y1="0" x2="7.5" y2="13" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="0" x2="37.5" y2="13" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; 
-            }
+            if (conn.r) { connFill += `<rect x="22.5" y="14" width="23.5" height="24" fill="${theme.base}" />`; connStroke += `<line x1="37.5" y1="14" x2="45" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="38" x2="45" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; }
+            if (conn.l) { connFill += `<rect x="-1" y="14" width="24" height="24" fill="${theme.base}" />`; connStroke += `<line x1="0" y1="14" x2="7.5" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="0" y1="38" x2="7.5" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; }
+            if (conn.b) { connFill += `<rect x="7.5" y="22.5" width="30" height="23.5" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="37.5" x2="7.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="37.5" x2="37.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; }
+            if (conn.t) { connFill += `<rect x="7.5" y="-1" width="30" height="24" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="0" x2="7.5" y2="13" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="0" x2="37.5" y2="13" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; }
             return `<div class="puyo-inner"><svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;"><path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="2.5" stroke-linejoin="round" />${connFill}${connStroke}${highlightHTML}${isGhost ? '' : centeredEyesHTML}<path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" /></svg></div>`;
         }
 
@@ -618,66 +482,126 @@
         function generatePiece() { return { main: activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)], sub: activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)] }; }
         function refillQueue() { while (puyoQueue.length < 3) puyoQueue.push(generatePiece()); }
 
-        function openResetModal() { document.getElementById('resetModal').classList.add('active'); }
-        function closeResetModal() { document.getElementById('resetModal').classList.remove('active'); }
+        function openResetModal() { document.getElementById('resetModal').classList.add('active'); stopGravity(); }
+        function closeResetModal() { document.getElementById('resetModal').classList.remove('active'); if (activePiece && !isGameOver) startGravity(); }
         
         function confirmReset(selectedColors) {
-            closeResetModal();
-            currentColorCount = selectedColors;
-            const isScoreResetOn = document.getElementById('scoreResetToggle').checked;
-            startGame(isScoreResetOn);
+            closeResetModal(); currentColorCount = selectedColors;
+            startGame(document.getElementById('scoreResetToggle').checked);
         }
 
         function startGame(isScoreResetOn = false) {
-            pickColorPalette();
-            initBoard();
-            document.getElementById('puyoLayer').innerHTML = '';
-            puyoQueue = []; historyStack = []; unconnectedIds.clear();
-            isGameOver = false; isAnimating = false;
+            pickColorPalette(); initBoard(); document.getElementById('puyoLayer').innerHTML = '';
+            puyoQueue = []; historyStack = []; unconnectedIds.clear(); isGameOver = false; isAnimating = false; lastRotateFailedState = null;
             currentAllClearCount = 0; totalPoppedCount = 0; currentScore = 0;
-            
             if (isScoreResetOn) { maxScore = 0; maxChainCount = 0; maxAllClearCount = 0; }
-            
-            updateStatsUI();
-            document.getElementById('gameOverMask').classList.add('hidden');
-            updateUndoBtn(); refillQueue(); spawnPiece(); render();
+            updateStatsUI(); document.getElementById('gameOverMask').classList.add('hidden'); updateUndoBtn(); refillQueue(); spawnPiece(); render();
         }
 
         function spawnPiece() {
-            refillQueue();
-            const next = puyoQueue.shift(); refillQueue();
-            activePiece = { x: 2, y: 1, rot: 0, angle: 0, isLanded: false, main: { color: next.main, id: nextPuyoId++ }, sub: { color: next.sub, id: nextPuyoId++ } };
-            if (board[activePiece.y][activePiece.x] !== null) { isGameOver = true; activePiece = null; document.getElementById('gameOverMask').classList.remove('hidden'); }
+            refillQueue(); const next = puyoQueue.shift(); refillQueue(); lastRotateFailedState = null;
+            activePiece = { x: 2, y: 1, rot: 0, angle: 0, fallProgress: 0, isLanded: false, isLanding: false, landedAt: null, landingAnimationToken: 0, main: { color: next.main, id: nextPuyoId++ }, sub: { color: next.sub, id: nextPuyoId++ } };
+            if (board[activePiece.y][activePiece.x] !== null) { isGameOver = true; activePiece = null; document.getElementById('gameOverMask').classList.remove('hidden'); } else { startGravity(); }
             saveResumeData();
         }
 
-        function getSubPos(piece) { return { x: piece.x + ROTATIONS[piece.rot].dx, y: piece.y + ROTATIONS[piece.rot].dy }; }
+        function getSubPos(piece) { let rotIdx = (piece.rot || 0) % 4; return { x: piece.x + ROTATIONS[rotIdx].dx, y: piece.y + ROTATIONS[rotIdx].dy }; }
         function isValidPos(x, y) { if (x < 0 || x >= COLS || y >= ROWS) return false; if (y >= 0 && board[y][x] !== null) return false; return true; }
         function canPlacePiece(piece) { return isValidPos(piece.x, piece.y) && isValidPos(getSubPos(piece).x, getSubPos(piece).y); }
 
+        function updateLandingState(now = Date.now()) {
+            if (!activePiece) return;
+            const isGrounded = !canPlacePiece({ ...activePiece, y: activePiece.y + 1 });
+            if (isGrounded && !activePiece.isLanded) {
+                activePiece.isLanded = true;
+                activePiece.landedAt = now;
+                activePiece.isLanding = true;
+                const pieceId = activePiece.main.id;
+                const animationToken = (activePiece.landingAnimationToken || 0) + 1;
+                activePiece.landingAnimationToken = animationToken;
+                setTimeout(() => {
+                    if (activePiece?.main.id === pieceId && activePiece.landingAnimationToken === animationToken) {
+                        activePiece.isLanding = false;
+                        render();
+                    }
+                }, 300);
+                triggerVibration(20);
+            } else if (!isGrounded) {
+                activePiece.isLanded = false;
+                activePiece.landedAt = null;
+                activePiece.isLanding = false;
+            }
+        }
+
+        function lockPieceIfReady(now = Date.now()) {
+            if (!activePiece?.isLanded || now - activePiece.landedAt < LOCK_DELAY_MS) return false;
+            lockPiece();
+            return true;
+        }
+
+        function ensureGravityRunning() {
+            if ((gravityEnabled || activePiece?.isLanded) && !gravityRAF && !isGameOver && !isAnimating && activePiece) {
+                lastTime = null;
+                gravityRAF = requestAnimationFrame(gravityLoop);
+            }
+        }
+
         function movePiece(dx) {
             if (isAnimating || isGameOver || !activePiece) return;
+            if (lockPieceIfReady()) return;
             const test = { ...activePiece, x: activePiece.x + dx };
-            if (canPlacePiece(test)) { activePiece = test; render(); triggerVibration(10); }
+            if (canPlacePiece(test)) { activePiece = test; updateLandingState(); ensureGravityRunning(); lastRotateFailedState = null; render(); triggerVibration(10); }
         }
 
         function rotatePiece(dir) {
             if (isAnimating || isGameOver || !activePiece) return;
-            let newRot = (activePiece.rot + dir + 4) % 4, newAngle = activePiece.angle + (dir * 90);
-            let test = { ...activePiece, rot: newRot, angle: newAngle }, success = false;
-            if (canPlacePiece(test)) { activePiece = test; success = true; } else {
-                let kickR = { ...test, x: test.x + 1 }, kickL = { ...test, x: test.x - 1 }, kickU = { ...test, y: test.y - 1 };
-                if (canPlacePiece(kickR)) { activePiece = kickR; success = true; } else if (canPlacePiece(kickL)) { activePiece = kickL; success = true; } else if (canPlacePiece(kickU)) { activePiece = kickU; success = true; }
+            if (lockPieceIfReady()) return;
+            
+            let currentRot = activePiece.rot || 0;
+            let currentAngle = activePiece.angle || 0;
+            let newRot = (currentRot + dir + 4) % 4;
+            let newAngle = currentAngle + (dir * 90);
+            let test = { ...activePiece, rot: newRot, angle: newAngle };
+            
+            let success = false;
+            let finalPiece = null;
+
+            if (canPlacePiece(test)) { 
+                finalPiece = test; success = true; 
+            } else {
+                if (newRot === 1 || newRot === 3) {
+                    let kickX = newRot === 1 ? -1 : 1;
+                    let kick = { ...test, x: test.x + kickX };
+                    if (canPlacePiece(kick)) { finalPiece = kick; success = true; }
+                } else {
+                    let kickU = { ...test, y: test.y - 1 };
+                    if (canPlacePiece(kickU)) { finalPiece = kickU; success = true; }
+                }
             }
-            if (success) { render(); triggerVibration(10); }
+
+            if (!success) {
+                if (lastRotateFailedState && lastRotateFailedState.dir === dir && lastRotateFailedState.x === activePiece.x && lastRotateFailedState.y === activePiece.y) {
+                    let quickRot = (currentRot + 2) % 4;
+                    let quickAngle = currentAngle + 180;
+                    let quickTest = { ...activePiece, rot: quickRot, angle: quickAngle };
+                    if (canPlacePiece(quickTest)) {
+                        finalPiece = quickTest; success = true;
+                    } else {
+                        let quickKickU = { ...quickTest, y: quickTest.y - 1 };
+                        if (canPlacePiece(quickKickU)) { finalPiece = quickKickU; success = true; }
+                    }
+                }
+            }
+
+            if (success) {
+                activePiece = finalPiece; updateLandingState(); ensureGravityRunning(); lastRotateFailedState = null; render(); triggerVibration(10);
+            } else {
+                lastRotateFailedState = { dir: dir, x: activePiece.x, y: activePiece.y };
+            }
         }
 
         function saveState() {
-            historyStack.push({
-                board: board.map(r => r.map(c => c ? { ...c } : null)), puyoQueue: JSON.parse(JSON.stringify(puyoQueue)), activeColorPalette: [...activeColorPalette], currentColorCount: currentColorCount,
-                maxChainCount: maxChainCount, currentAllClearCount: currentAllClearCount, maxAllClearCount: maxAllClearCount, totalPoppedCount: totalPoppedCount, currentScore: currentScore, maxScore: maxScore,
-                activePiece: activePiece ? { x: activePiece.x, y: activePiece.y, rot: activePiece.rot, angle: activePiece.angle, isLanded: activePiece.isLanded, main: { ...activePiece.main }, sub: { ...activePiece.sub } } : null
-            });
+            historyStack.push({ board: board.map(r => r.map(c => c ? { ...c } : null)), puyoQueue: JSON.parse(JSON.stringify(puyoQueue)), activeColorPalette: [...activeColorPalette], currentColorCount: currentColorCount, maxChainCount, currentAllClearCount, maxAllClearCount, totalPoppedCount, currentScore, maxScore, activePiece: activePiece ? { ...activePiece } : null });
             updateUndoBtn();
         }
 
@@ -686,100 +610,88 @@
             const prev = historyStack.pop();
             board = prev.board.map(r => r.map(c => c ? { ...c } : null)); puyoQueue = prev.puyoQueue; activeColorPalette = [...prev.activeColorPalette]; currentColorCount = prev.currentColorCount || 4;
             maxChainCount = prev.maxChainCount; currentAllClearCount = prev.currentAllClearCount; maxAllClearCount = prev.maxAllClearCount; totalPoppedCount = prev.totalPoppedCount || 0; currentScore = prev.currentScore; maxScore = prev.maxScore;
+            
             activePiece = prev.activePiece ? { ...prev.activePiece } : null;
-            unconnectedIds.clear(); isGameOver = false;
+            if (activePiece) {
+                activePiece.x = 2;
+                activePiece.y = 1;
+                activePiece.rot = 0;
+                activePiece.angle = 0;
+                activePiece.fallProgress = 0;
+                activePiece.isLanded = false;
+                activePiece.isLanding = false;
+                activePiece.landedAt = null;
+            }
+
+            unconnectedIds.clear(); isGameOver = false; lastRotateFailedState = null;
             document.getElementById('gameOverMask').classList.add('hidden'); document.getElementById('puyoLayer').innerHTML = '';
-            updateStatsUI(); updateUndoBtn(); render(); saveResumeData();
+            updateStatsUI(); updateUndoBtn(); render(); saveResumeData(); if (activePiece) startGravity();
         }
 
         function updateUndoBtn() { document.getElementById('undoBtn').disabled = (historyStack.length === 0); }
 
-        async function dropPiece() {
+        function dropPiece() {
             if (isAnimating || isGameOver || !activePiece) return;
-            isAnimating = true; saveState();
             let dist = 0;
             while (true) { let test = { ...activePiece, y: activePiece.y + dist + 1 }; if (canPlacePiece(test)) dist++; else break; }
-            activePiece.y += dist; activePiece.isLanded = true; render(true); triggerVibration(20);
-            await sleep(140);
+            activePiece.y += dist;
+            activePiece.fallProgress = 0;
+            lockPiece(true);
+        }
 
-            const sub = getSubPos(activePiece); const placedIds = [];
-            if (activePiece.y >= 0) { 
-                board[activePiece.y][activePiece.x] = { ...activePiece.main, isPopping: false, isLanding: true }; 
-                placedIds.push(activePiece.main.id); 
-            }
-            if (sub.y >= 0) { 
-                board[sub.y][sub.x] = { ...activePiece.sub, isPopping: false, isLanding: true }; 
-                placedIds.push(activePiece.sub.id); 
-            }
-            placedIds.forEach(id => unconnectedIds.add(id)); activePiece = null; render(); 
+        async function lockPiece(animateLanding = false) {
+            if (isAnimating || isGameOver || !activePiece) return;
+            isAnimating = true; stopGravity(); saveState();
+            activePiece.fallProgress = 0;
+            activePiece.isLanded = true;
+            activePiece.landedAt = null;
+            render(true);
+
+            const sub = getSubPos(activePiece); 
+            const placedIds = [];
+
+            // 着地後の盤面登録前に、操作用DOM要素の transition と transform を完全にリセット・即時スナップ
+            const mainEl = document.getElementById('puyo-' + activePiece.main.id);
+            const subEl = document.getElementById('puyo-' + activePiece.sub.id);
             
-            // 着地の揺れアニメーション（300ms）の完了を待機
+            if (mainEl) {
+                mainEl.style.transition = 'none';
+                mainEl.style.transform = 'none';
+                mainEl.style.left = `calc(var(--cell-size) * ${activePiece.x})`;
+                mainEl.style.top = `calc(var(--cell-size) * ${activePiece.y})`;
+            }
+            if (subEl) {
+                subEl.style.transition = 'none';
+                subEl.style.transform = 'none';
+                subEl.style.left = `calc(var(--cell-size) * ${sub.x})`;
+                subEl.style.top = `calc(var(--cell-size) * ${sub.y})`;
+            }
+            
+            if (mainEl) void mainEl.offsetHeight; // リフロー強制して即時適用
+
+            if (activePiece.y >= 0) { board[activePiece.y][activePiece.x] = { ...activePiece.main, isPopping: false, isLanding: animateLanding }; placedIds.push(activePiece.main.id); }
+            if (sub.y >= 0) { board[sub.y][sub.x] = { ...activePiece.sub, isPopping: false, isLanding: animateLanding }; placedIds.push(activePiece.sub.id); }
+            placedIds.forEach(id => unconnectedIds.add(id)); 
+            activePiece = null; 
+            render(); 
             await sleep(300);
 
-            placedIds.forEach(id => {
-                for (let y = 0; y < ROWS; y++) {
-                    for (let x = 0; x < COLS; x++) {
-                        if (board[y][x] && board[y][x].id === id) {
-                            board[y][x].isLanding = false;
-                        }
-                    }
-                }
-            });
+            placedIds.forEach(id => { for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { if (board[y][x] && board[y][x].id === id) { board[y][x].isLanding = false; } } } });
             placedIds.forEach(id => unconnectedIds.delete(id)); 
-            render();
-
-            // 揺れるアニメーションが完全に終わった後に消滅判定・連鎖処理へ移行
+            render(); 
             await resolveChains();
         }
 
         async function applyGravity() {
             let movedIds = [];
-            for (let x = 0; x < COLS; x++) {
-                let writeY = ROWS - 1;
-                for (let y = ROWS - 1; y >= 0; y--) {
-                    if (board[y][x]) {
-                        if (writeY !== y) { 
-                            board[writeY][x] = board[y][x]; 
-                            board[y][x] = null; 
-                            movedIds.push(board[writeY][x].id); 
-                        }
-                        writeY--;
-                    }
-                }
-            }
+            for (let x = 0; x < COLS; x++) { let writeY = ROWS - 1; for (let y = ROWS - 1; y >= 0; y--) { if (board[y][x]) { if (writeY !== y) { board[writeY][x] = board[y][x]; board[y][x] = null; movedIds.push(board[writeY][x].id); } writeY--; } } }
             if (movedIds.length > 0) { 
-                movedIds.forEach(id => unconnectedIds.add(id)); 
-                render(true); 
-                await sleep(120);
-
-                // 自由落下したぷよに着地プルンアニメーションを適用
-                movedIds.forEach(id => {
-                    for (let y = 0; y < ROWS; y++) {
-                        for (let x = 0; x < COLS; x++) {
-                            if (board[y][x] && board[y][x].id === id) {
-                                board[y][x].isLanding = true;
-                            }
-                        }
-                    }
-                });
-                render();
-
-                // 揺れアニメーション（300ms）の完了を待機
-                await sleep(300);
-
-                movedIds.forEach(id => {
-                    for (let y = 0; y < ROWS; y++) {
-                        for (let x = 0; x < COLS; x++) {
-                            if (board[y][x] && board[y][x].id === id) {
-                                board[y][x].isLanding = false;
-                            }
-                        }
-                    }
-                });
-                movedIds.forEach(id => unconnectedIds.delete(id));
-                render();
-            }
-            return movedIds;
+                movedIds.forEach(id => unconnectedIds.add(id)); render(true); await sleep(120);
+                movedIds.forEach(id => { for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { if (board[y][x] && board[y][x].id === id) { board[y][x].isLanding = true; } } } });
+                render(); await sleep(300);
+                movedIds.forEach(id => { for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { if (board[y][x] && board[y][x].id === id) { board[y][x].isLanding = false; } } } });
+                movedIds.forEach(id => unconnectedIds.delete(id)); render();
+            } return movedIds;
         }
 
         function findMatches() {
@@ -791,81 +703,45 @@
                         let group = [], queue = [{ x, y }]; visited[y][x] = true;
                         while (queue.length > 0) {
                             let curr = queue.shift(); group.push(curr);
-                            [[0,1], [0,-1], [1,0], [-1,0]].forEach(([dx, dy]) => {
-                                let nx = curr.x + dx, ny = curr.y + dy;
-                                if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) { if (!visited[ny][nx] && board[ny][nx] && board[ny][nx].color === cell.color) { visited[ny][nx] = true; queue.push({ x: nx, y: ny }); } }
-                            });
+                            [[0,1], [0,-1], [1,0], [-1,0]].forEach(([dx, dy]) => { let nx = curr.x + dx, ny = curr.y + dy; if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) { if (!visited[ny][nx] && board[ny][nx] && board[ny][nx].color === cell.color) { visited[ny][nx] = true; queue.push({ x: nx, y: ny }); } } });
                         }
                         if (group.length >= 4) { toErase = toErase.concat(group); eraseGroups.push({ color: cell.color, count: group.length }); }
                     }
                 }
-            }
-            return { toErase, eraseGroups };
+            } return { toErase, eraseGroups };
         }
 
-        function isBoardEmpty() {
-            for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { if (board[y][x] !== null) return false; } }
-            return true;
-        }
+        function isBoardEmpty() { for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { if (board[y][x] !== null) return false; } } return true; }
 
         async function resolveChains() {
-            isAnimating = true;
-            let currentChain = 0;
-            let chainTotalScore = 0;
-            let firstChainStarted = false;
-
+            isAnimating = true; let currentChain = 0; let chainTotalScore = 0; let firstChainStarted = false;
             let movedIds = await applyGravity();
 
             while (true) {
-                let { toErase, eraseGroups } = findMatches();
-                if (toErase.length === 0) break;
-
-                if (!firstChainStarted) {
-                    currentScore = 0;
-                    totalPoppedCount = 0; 
-                    firstChainStarted = true;
-                }
-
-                currentChain++;
-                if (currentChain > maxChainCount) maxChainCount = currentChain;
-                totalPoppedCount += toErase.length;
-                triggerVibration([30, 20]);
+                let { toErase, eraseGroups } = findMatches(); if (toErase.length === 0) break;
+                if (!firstChainStarted) { currentScore = 0; totalPoppedCount = 0; firstChainStarted = true; }
+                currentChain++; if (currentChain > maxChainCount) maxChainCount = currentChain;
+                totalPoppedCount += toErase.length; triggerVibration([30, 20]);
 
                 let totalErasedCount = 0, connectBonusSum = 0, colorsErased = new Set();
                 for (let g of eraseGroups) { totalErasedCount += g.count; connectBonusSum += getConnectBonus(g.count); colorsErased.add(g.color); }
-                let colorBonus = getColorBonus(colorsErased.size), chainBonus = getChainBonus(currentChain);
-                let totalBonus = chainBonus + connectBonusSum + colorBonus;
-                if (totalBonus === 0) totalBonus = 1;
-                if (totalBonus > 999) totalBonus = 999;
+                let colorBonus = getColorBonus(colorsErased.size), chainBonus = getChainBonus(currentChain); let totalBonus = chainBonus + connectBonusSum + colorBonus;
+                if (totalBonus === 0) totalBonus = 1; if (totalBonus > 999) totalBonus = 999;
                 
-                let stepScore = totalErasedCount * totalBonus * 10;
-                chainTotalScore += stepScore;
-
-                currentScore = chainTotalScore;
-                if (currentScore > maxScore) { maxScore = currentScore; }
+                chainTotalScore += totalErasedCount * totalBonus * 10; currentScore = chainTotalScore; if (currentScore > maxScore) maxScore = currentScore;
                 updateStatsUI();
 
                 let sumX = 0, sumY = 0;
                 for (let pos of toErase) { sumX += pos.x; sumY += pos.y; board[pos.y][pos.x].isPopping = true; }
-                render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain);
-                
-                await sleep(800);
+                render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(800);
 
                 for (let pos of toErase) { if (board[pos.y][pos.x]) { let id = board[pos.y][pos.x].id; let el = document.getElementById('puyo-' + id); if (el) el.remove(); board[pos.y][pos.x] = null; } }
-                render();
-                
-                movedIds = await applyGravity();
+                render(); movedIds = await applyGravity();
             }
 
             updateStatsUI();
-
-            if (currentChain > 0 && isBoardEmpty()) {
-                currentAllClearCount++; if (currentAllClearCount > maxAllClearCount) maxAllClearCount = currentAllClearCount;
-                updateStatsUI(); showAllClearPopup(); triggerVibration([50, 30, 50]); await sleep(800);
-            }
-
-            isAnimating = false;
-            if (!isGameOver) { spawnPiece(); render(); }
+            if (currentChain > 0 && isBoardEmpty()) { currentAllClearCount++; if (currentAllClearCount > maxAllClearCount) maxAllClearCount = currentAllClearCount; updateStatsUI(); showAllClearPopup(); triggerVibration([50, 30, 50]); await sleep(800); }
+            isAnimating = false; if (!isGameOver) { spawnPiece(); render(); }
         }
 
         function showChainPopup(gridX, gridY, chainNumber) {
@@ -898,7 +774,6 @@
                         let el = document.getElementById(domId); if (!el) { el = document.createElement('div'); el.id = domId; el.className = 'puyo-item'; layer.appendChild(el); }
                         if (el.getAttribute('data-conn') !== connStr) { el.innerHTML = createPuyoSVG(item.color, false, conn); el.setAttribute('data-conn', connStr); }
                         el.className = 'puyo-item' + (isFalling ? ' falling' : ''); el.style.left = `calc(var(--cell-size) * ${x})`; el.style.top = `calc(var(--cell-size) * ${y})`; el.style.transform = 'none';
-                        
                         if (item.isPopping) el.classList.add('puyo-pop');
                         if (item.isLanding) el.classList.add('puyo-landing'); else el.classList.remove('puyo-landing');
                     }
@@ -906,16 +781,23 @@
             }
 
             if (activePiece) {
-                const subPos = getSubPos(activePiece); let activeConnMain = { t:0, r:0, b:0, l:0 }, activeConnSub = { t:0, r:0, b:0, l:0 };
+                let activeConnMain = { t:0, r:0, b:0, l:0 }, activeConnSub = { t:0, r:0, b:0, l:0 };
+                
+                let fp = 0;
+                if (!isAnimating && gravityEnabled) {
+                    fp = activePiece.fallProgress || 0;
+                    if (!canPlacePiece({ ...activePiece, y: activePiece.y + 1 })) fp = 0; 
+                }
+
                 if (!isAnimating) {
                     let ghostDrop = 0; while (true) { let test = { ...activePiece, y: activePiece.y + ghostDrop + 1 }; if (canPlacePiece(test)) ghostDrop++; else break; }
                     const gMainId = 'ghost-main', gSubId = 'ghost-sub'; currentIds.add(gMainId); currentIds.add(gSubId);
                     let gMain = document.getElementById(gMainId); if (!gMain) { gMain = document.createElement('div'); gMain.id = gMainId; gMain.className = 'puyo-item ghost'; layer.appendChild(gMain); }
                     let gMainConnStr = `${activeConnMain.t}${activeConnMain.r}${activeConnMain.b}${activeConnMain.l}`; if (gMain.getAttribute('data-conn') !== gMainConnStr) { gMain.innerHTML = createPuyoSVG(activePiece.main.color, true, activeConnMain); gMain.setAttribute('data-conn', gMainConnStr); }
-                    let gSub = document.getElementById(gSubId); if (!gSub) { gSub = document.createElement('div'); gSub.id = gSubId; gSub.className = 'puyo-item ghost'; layer.appendChild(gSub); }
+                    let gSub = document.getElementById(gSubId); if (!gSub) { gSub = document.createElement('div'); gSub.id = gSubId; gSub.className = 'puyo-item ghost active-sub-puyo'; layer.appendChild(gSub); }
                     let gSubConnStr = `${activeConnSub.t}${activeConnSub.r}${activeConnSub.b}${activeConnSub.l}`; if (gSub.getAttribute('data-conn') !== gSubConnStr) { gSub.innerHTML = createPuyoSVG(activePiece.sub.color, true, activeConnSub); gSub.setAttribute('data-conn', gSubConnStr); }
                     gMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`; gMain.style.top = `calc(var(--cell-size) * ${activePiece.y + ghostDrop})`; gMain.style.transform = 'none';
-                    gSub.style.left = `calc(var(--cell-size) * ${subPos.x})`; gSub.style.top = `calc(var(--cell-size) * ${subPos.y + ghostDrop})`; gSub.style.transform = 'none';
+                    gSub.style.left = `calc(var(--cell-size) * ${activePiece.x})`; gSub.style.top = `calc(var(--cell-size) * ${activePiece.y + ghostDrop})`; gSub.style.transform = `rotate(${activePiece.angle}deg) translateY(-100%) rotate(${-activePiece.angle}deg)`;
                 }
 
                 const aMainDomId = 'puyo-' + activePiece.main.id, aSubDomId = 'puyo-' + activePiece.sub.id; currentIds.add(aMainDomId); currentIds.add(aSubDomId);
@@ -923,10 +805,16 @@
                 let aMainConnStr = `${activeConnMain.t}${activeConnMain.r}${activeConnMain.b}${activeConnMain.l}`; if (aMain.getAttribute('data-conn') !== aMainConnStr) { aMain.innerHTML = createPuyoSVG(activePiece.main.color, false, activeConnMain); aMain.setAttribute('data-conn', aMainConnStr); }
                 let aSub = document.getElementById(aSubDomId); if (!aSub) { aSub = document.createElement('div'); aSub.id = aSubDomId; layer.appendChild(aSub); }
                 let aSubConnStr = `${activeConnSub.t}${activeConnSub.r}${activeConnSub.b}${activeConnSub.l}`; if (aSub.getAttribute('data-conn') !== aSubConnStr) { aSub.innerHTML = createPuyoSVG(activePiece.sub.color, false, activeConnSub); aSub.setAttribute('data-conn', aSubConnStr); }
+                
                 const axisClass = activePiece.isLanded ? '' : ' axis-puyo';
-                aMain.className = 'puyo-item' + axisClass + (isFalling ? ' falling' : ''); aSub.className = 'puyo-item' + (isFalling ? ' falling' : ' rotating');
-                aMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aMain.style.top = `calc(var(--cell-size) * ${activePiece.y})`; aMain.style.transform = 'none';
-                aSub.style.left = `calc(var(--cell-size) * ${subPos.x})`; aSub.style.top = `calc(var(--cell-size) * ${subPos.y})`; aSub.style.transform = 'none';
+                const activeClass = ' active-puyo';
+                const landingClass = activePiece.isLanding ? ' puyo-landing' : '';
+                aMain.className = 'puyo-item' + axisClass + activeClass + landingClass + (isFalling ? ' falling' : ''); 
+                aSub.className = 'puyo-item active-sub-puyo' + activeClass + landingClass + (isFalling ? ' falling' : '');
+                
+                aMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aMain.style.top = `calc(var(--cell-size) * ${activePiece.y + fp})`; aMain.style.transform = 'none';
+                aSub.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aSub.style.top = `calc(var(--cell-size) * ${activePiece.y + fp})`; 
+                aSub.style.transform = `rotate(${activePiece.angle}deg) translateY(-100%) rotate(${-activePiece.angle}deg)`;
             }
 
             Array.from(layer.children).forEach(el => { if (!el.classList.contains('chain-num-popup') && !el.classList.contains('all-clear-popup') && !currentIds.has(el.id)) el.remove(); });
@@ -939,10 +827,31 @@
 
         let touchStartX = 0, touchStartY = 0, touchLastX = 0, touchStartTime = 0, isGameGesture = false, hasSwiped = false;
         document.addEventListener('touchstart', (e) => { if (e.target.closest('.left-panel, .right-panel, button, .modal-card, .top-bar')) { isGameGesture = false; return; } isGameGesture = true; hasSwiped = false; const t = e.touches[0]; touchStartX = touchLastX = t.clientX; touchStartY = t.clientY; touchStartTime = Date.now(); }, { passive: false });
-        document.addEventListener('touchmove', (e) => { if (!isGameGesture) return; e.preventDefault(); const t = e.touches[0], dyTotal = t.clientY - touchStartY, dxStep = t.clientX - touchLastX; if (dyTotal > 35 && !hasSwiped) { hasSwiped = true; dropPiece(); return; } if (dyTotal < -35 && !hasSwiped) { hasSwiped = true; undo(); return; } const cellWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) || 40; if (Math.abs(dxStep) >= cellWidth * 0.5) { hasSwiped = true; if (dxStep < 0) movePiece(-1); else if (dxStep > 0) movePiece(1); touchLastX = t.clientX; } }, { passive: false });
-        document.addEventListener('touchend', (e) => { if (!isGameGesture) return; const dt = Date.now() - touchStartTime, t = e.changedTouches[0], dxTotal = t.clientX - touchStartX, dyTotal = t.clientY - touchStartY; if (!hasSwiped && Math.abs(dxTotal) < 15 && Math.abs(dyTotal) < 15 && dt < 300) { if (t.clientX < window.innerWidth / 2) rotatePiece(-1); else rotatePiece(1); } isGameGesture = false; });
-        document.addEventListener('keydown', (e) => { if (["a", "A", "d", "D", "s", "S", "q", "Q", "e", "E", "/", "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp"].includes(e.key)) { e.preventDefault(); } switch(e.key) { case 'a': case 'A': case 'ArrowLeft': movePiece(-1); break; case 'd': case 'D': case 'ArrowRight': movePiece(1); break; case 's': case 'S': case 'ArrowDown': dropPiece(); break; case 'q': case 'Q': case '/': rotatePiece(-1); break; case 'e': case 'E': case 'ArrowUp': rotatePiece(1); break; } });
-        window.onload = () => { if (!loadResumeData()) { startGame(); openResetModal(); } };
+        document.addEventListener('touchmove', (e) => { 
+            if (!isGameGesture) return; e.preventDefault(); const t = e.touches[0]; const dx = t.clientX - touchLastX; const swipeThresh = window.innerWidth * 0.08; 
+            if (Math.abs(dx) > swipeThresh) { if (dx > 0) movePiece(1); else movePiece(-1); touchLastX = t.clientX; hasSwiped = true; } 
+            const dy = t.clientY - touchStartY; 
+            if (dy > window.innerHeight * 0.1) { 
+                dropPiece(); isGameGesture = false; 
+            } else if (dy < -window.innerHeight * 0.1) {
+                undo(); isGameGesture = false;
+            }
+        }, { passive: false });
+        document.addEventListener('touchend', (e) => { if (!isGameGesture || hasSwiped) return; const touchDuration = Date.now() - touchStartTime; if (touchDuration < 350) { const screenX = e.changedTouches[0].clientX; const screenW = window.innerWidth; if (screenX < screenW / 2) rotatePiece(-1); else rotatePiece(1); } }, { passive: false });
+        
+        document.addEventListener('keydown', (e) => { 
+            const key = e.key; const lowerKey = key.toLowerCase();
+            if (key === 'ArrowLeft' || lowerKey === 'a') movePiece(-1); 
+            if (key === 'ArrowRight' || lowerKey === 'd') movePiece(1); 
+            if (key === 'ArrowDown' || lowerKey === 's') dropPiece(); 
+            if (lowerKey === 'z' || lowerKey === 'q' || key === '/') rotatePiece(-1); 
+            if (lowerKey === 'x' || lowerKey === 'e' || key === 'ArrowUp') rotatePiece(1); 
+            if (lowerKey === 'y' || lowerKey === 'r') openResetModal(); 
+            if (lowerKey === 'u' && document.activeElement.tagName !== 'INPUT') undo(); 
+        });
+
+        window.onload = () => { if (!loadResumeData()) startGame(true); else render(); };
+        window.addEventListener('blur', saveResumeData); window.addEventListener('beforeunload', saveResumeData);
     </script>
 </body>
 </html>
