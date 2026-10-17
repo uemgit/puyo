@@ -756,7 +756,8 @@
                 if (totalBonus === 0) totalBonus = 1; if (totalBonus > 999) totalBonus = 999;
                 
                 chainTotalScore += totalErasedCount * totalBonus * 10; currentScore = chainTotalScore; if (currentScore > maxScore) maxScore = currentScore;
-                updateStatsUI();
+                const scoreBase = totalErasedCount * 10;
+                updateStatsUI(`${scoreBase} x ${totalBonus}`);
 
                 let sumX = 0, sumY = 0;
                 for (let pos of toErase) { sumX += pos.x; sumY += pos.y; board[pos.y][pos.x].isPopping = true; }
@@ -782,7 +783,7 @@
             layer.appendChild(popup); setTimeout(() => { if (popup.parentNode) popup.remove(); }, 1000);
         }
 
-        function updateStatsUI() { document.getElementById('currScoreDisp').innerText = currentScore; document.getElementById('maxScoreDisp').innerText = maxScore; document.getElementById('totalPoppedDisp').innerText = totalPoppedCount; document.getElementById('maxAllClearDisp').innerText = maxAllClearCount; document.getElementById('maxChainDisp').innerText = maxChainCount; }
+        function updateStatsUI(scoreDisplay = currentScore) { document.getElementById('currScoreDisp').innerText = String(scoreDisplay); document.getElementById('maxScoreDisp').innerText = maxScore; document.getElementById('totalPoppedDisp').innerText = totalPoppedCount; document.getElementById('maxAllClearDisp').innerText = maxAllClearCount; document.getElementById('maxChainDisp').innerText = maxChainCount; }
 
         function render(isFalling = false) {
             const layer = document.getElementById('puyoLayer'); const currentIds = new Set();
