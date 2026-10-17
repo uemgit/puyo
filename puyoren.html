@@ -353,6 +353,10 @@
         const ROTATIONS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
         const CHAIN_BONUS_TABLE = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
         
+        const SWIPE_UP_RATIO = 0.10;
+        const SWIPE_DOWN_RATIO = 0.08;
+        const SWIPE_LEFTRIGHT_RATIO = 0.05;
+
         function getChainBonus(chain) { if (chain <= 1) return 0; if (chain < CHAIN_BONUS_TABLE.length) return CHAIN_BONUS_TABLE[chain]; return 512; }
         function getConnectBonus(count) { if (count <= 4) return 0; if (count <= 10) return count - 3; return 10; }
         function getColorBonus(colorCount) { if (colorCount <= 1) return 0; if (colorCount === 2) return 3; if (colorCount === 3) return 6; if (colorCount === 4) return 10; return 15; }
@@ -861,12 +865,12 @@
         let touchStartX = 0, touchStartY = 0, touchLastX = 0, touchStartTime = 0, isGameGesture = false, hasSwiped = false;
         document.addEventListener('touchstart', (e) => { if (e.target.closest('.left-panel, .right-panel, button, .modal-card, .top-bar')) { isGameGesture = false; return; } isGameGesture = true; hasSwiped = false; const t = e.touches[0]; touchStartX = touchLastX = t.clientX; touchStartY = t.clientY; touchStartTime = Date.now(); }, { passive: false });
         document.addEventListener('touchmove', (e) => { 
-            if (!isGameGesture) return; e.preventDefault(); const t = e.touches[0]; const dx = t.clientX - touchLastX; const swipeThresh = window.innerWidth * 0.03; 
+            if (!isGameGesture) return; e.preventDefault(); const t = e.touches[0]; const dx = t.clientX - touchLastX; const swipeThresh = window.innerWidth * SWIPE_LEFTRIGHT_RATIO; 
             if (Math.abs(dx) > swipeThresh) { if (dx > 0) movePiece(1); else movePiece(-1); touchLastX = t.clientX; hasSwiped = true; } 
             const dy = t.clientY - touchStartY; 
-            if (dy > window.innerHeight * 0.05) { 
+            if (dy > window.innerHeight * SWIPE_UP_RATIO) { 
                 dropPiece(); isGameGesture = false; 
-            } else if (dy < -window.innerHeight * 0.05) {
+            } else if (dy < -window.innerHeight * SWIPE_DOWN_RATIO) {
                 undo(); isGameGesture = false;
             }
         }, { passive: false });
