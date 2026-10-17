@@ -861,12 +861,12 @@
         let touchStartX = 0, touchStartY = 0, touchLastX = 0, touchStartTime = 0, isGameGesture = false, hasSwiped = false;
         document.addEventListener('touchstart', (e) => { if (e.target.closest('.left-panel, .right-panel, button, .modal-card, .top-bar')) { isGameGesture = false; return; } isGameGesture = true; hasSwiped = false; const t = e.touches[0]; touchStartX = touchLastX = t.clientX; touchStartY = t.clientY; touchStartTime = Date.now(); }, { passive: false });
         document.addEventListener('touchmove', (e) => { 
-            if (!isGameGesture) return; e.preventDefault(); const t = e.touches[0]; const dx = t.clientX - touchLastX; const swipeThresh = window.innerWidth * 0.08; 
+            if (!isGameGesture) return; e.preventDefault(); const t = e.touches[0]; const dx = t.clientX - touchLastX; const swipeThresh = window.innerWidth * 0.03; 
             if (Math.abs(dx) > swipeThresh) { if (dx > 0) movePiece(1); else movePiece(-1); touchLastX = t.clientX; hasSwiped = true; } 
             const dy = t.clientY - touchStartY; 
-            if (dy > window.innerHeight * 0.1) { 
+            if (dy > window.innerHeight * 0.05) { 
                 dropPiece(); isGameGesture = false; 
-            } else if (dy < -window.innerHeight * 0.1) {
+            } else if (dy < -window.innerHeight * 0.05) {
                 undo(); isGameGesture = false;
             }
         }, { passive: false });
