@@ -151,30 +151,34 @@
         .board {
             position: relative; width: calc(var(--cell-size) * 6 + 10px); height: calc(var(--cell-size) * 13 + 10px);
             background: #a36d39; border: 5px solid #3d2314; border-radius: 12px;
-            box-shadow: 0 0 15px rgba(61, 35, 20, 0.4), inset 0 0 12px rgba(0, 0, 0, 0.35); flex-shrink: 0; overflow: hidden;
+            box-shadow: 0 0 15px rgba(61, 35, 20, 0.4), inset 0 0 12px rgba(0, 0, 0, 0.35); flex-shrink: 0; overflow: hidden; isolation: isolate;
         }
 
-        .grid-layer { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(13, 1fr); pointer-events: none; }
+        .grid-layer { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(13, 1fr); pointer-events: none; z-index: -1; }
         .grid-cell { border-right: 1px solid rgba(61, 35, 20, 0.18); border-bottom: 1px solid rgba(61, 35, 20, 0.18); }
+        .grid-cell.connected-right { border-right-color: transparent; }
+        .grid-cell.connected-below { border-bottom-color: transparent; }
         .grid-cell:nth-child(6n) { border-right: none; }
         .grid-cell:nth-last-child(-n+6) { border-bottom: none; }
 
         .death-line {
-            position: absolute; top: calc(var(--cell-size) * 1); left: 0; right: 0; height: 0;
-            border-top: 2px dashed #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.9); pointer-events: none; z-index: 15;
+            position: absolute; top: calc(var(--cell-size) * 1); left: 0; right: 0; height: 2px;
+            display: grid; grid-template-columns: repeat(6, 1fr); pointer-events: none; z-index: -1;
         }
+        .death-line-segment { border-top: 2px dashed #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.9); }
+        .death-line-segment.connected { border-color: transparent; box-shadow: none; }
 
-        #puyoLayer { position: absolute; inset: 0; pointer-events: none; }
+        #puyoLayer { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 
         .puyo-item {
-            position: absolute; width: var(--cell-size); height: var(--cell-size); padding: 1px;
+            position: absolute; width: var(--cell-size); height: var(--cell-size); padding: 0;
             will-change: left, top, transform; 
             transition: left 0.08s ease-out, top 0.08s linear, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); 
             z-index: 10;
         }
         
         .puyo-item.active-puyo { transition: left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .puyo-item.falling { transition: top 0.12s cubic-bezier(0.25, 0.1, 0.25, 1), left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) !important; }
+        .puyo-item.falling { transition: top var(--fall-duration, 0.12s) cubic-bezier(0.25, 0.1, 0.25, 1), left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) !important; }
         .puyo-item.ghost { opacity: 0.35; filter: saturate(0.6); z-index: 5; }
         .puyo-item.active-sub-puyo { z-index: 12; transition: left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
@@ -290,7 +294,7 @@
             <div id="boardContainer" class="board">
                 <div class="tap-guide-overlay"><div class="tap-zone-left"></div><div class="tap-zone-right"></div></div>
                 <div class="grid-layer" id="gridBg"></div>
-                <div class="death-line"></div>
+                <div class="death-line"><span class="death-line-segment"></span><span class="death-line-segment"></span><span class="death-line-segment"></span><span class="death-line-segment"></span><span class="death-line-segment"></span><span class="death-line-segment"></span></div>
                 <div id="puyoLayer"></div>
                 <div id="gameOverMask" class="game-over-mask hidden">
                     <div class="game-over-text">ばたんきゅ〜</div>
@@ -337,6 +341,7 @@
         const ROWS = 13; 
         const SAVE_STORAGE_KEY = 'PUYO_CHAIN_PRACTICE_RESUME_DATA';
         const LOCK_DELAY_MS = 530;
+        const DROP_STEP_DURATION_MS = 16;
         // const GRAVITY_INTERVALS = [0, 1500, 1000, 530, 400, 270];
         const GRAVITY_INTERVALS = [0, 1200, 530, 270, 110, 60];
 
@@ -469,10 +474,10 @@
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
             const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
             let connFill = "", connStroke = "";
-            if (conn.r) { connFill += `<rect x="22.5" y="14" width="23.5" height="24" fill="${theme.base}" />`; connStroke += `<line x1="37.5" y1="14" x2="45" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="38" x2="45" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; }
-            if (conn.l) { connFill += `<rect x="-1" y="14" width="24" height="24" fill="${theme.base}" />`; connStroke += `<line x1="0" y1="14" x2="7.5" y2="14" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="0" y1="38" x2="7.5" y2="38" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; }
-            if (conn.b) { connFill += `<rect x="7.5" y="22.5" width="30" height="23.5" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="37.5" x2="7.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="37.5" x2="37.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; }
-            if (conn.t) { connFill += `<rect x="7.5" y="-1" width="30" height="24" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="0" x2="7.5" y2="13" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" /><line x1="37.5" y1="0" x2="37.5" y2="13" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="square" />`; }
+            if (conn.r) { connFill += `<rect x="20" y="14" width="25" height="24" fill="${theme.base}" />`; connStroke += `<line x1="37.5" y1="13.123" x2="45" y2="13.123" stroke="${theme.stroke}" stroke-width="2.5" /><line x1="37.5" y1="37.87" x2="45" y2="37.87" stroke="${theme.stroke}" stroke-width="2.5" />`; }
+            if (conn.l) { connFill += `<rect x="0" y="14" width="25" height="24" fill="${theme.base}" />`; connStroke += `<line x1="0" y1="13.123" x2="7.5" y2="13.123" stroke="${theme.stroke}" stroke-width="2.5" /><line x1="0" y1="37.87" x2="7.5" y2="37.87" stroke="${theme.stroke}" stroke-width="2.5" />`; }
+            if (conn.b) { connFill += `<rect x="7.5" y="20" width="30" height="25" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="37.87" x2="7.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" /><line x1="37.5" y1="37.87" x2="37.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" />`; }
+            if (conn.t) { connFill += `<rect x="7.5" y="0" width="30" height="25" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="0" x2="7.5" y2="13.123" stroke="${theme.stroke}" stroke-width="2.5" /><line x1="37.5" y1="0" x2="37.5" y2="13.123" stroke="${theme.stroke}" stroke-width="2.5" />`; }
             return `<div class="puyo-inner"><svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;"><path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="2.5" stroke-linejoin="round" />${connFill}${connStroke}${highlightHTML}${isGhost ? '' : centeredEyesHTML}<path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" /></svg></div>`;
         }
 
@@ -630,18 +635,34 @@
 
         function updateUndoBtn() { document.getElementById('undoBtn').disabled = (historyStack.length === 0); }
 
-        function dropPiece() {
+        async function dropPiece() {
             if (isAnimating || isGameOver || !activePiece) return;
             let dist = 0;
             while (true) { let test = { ...activePiece, y: activePiece.y + dist + 1 }; if (canPlacePiece(test)) dist++; else break; }
+            if (dist === 0) {
+                await lockPiece(true);
+                return;
+            }
+
+            saveState();
+            isAnimating = true;
+            stopGravity();
             activePiece.y += dist;
             activePiece.fallProgress = 0;
-            lockPiece(true);
+            render(true);
+
+            const fallDuration = dist * DROP_STEP_DURATION_MS;
+            for (const puyo of [activePiece.main, activePiece.sub]) {
+                const element = document.getElementById(`puyo-${puyo.id}`);
+                if (element) element.style.setProperty('--fall-duration', `${fallDuration}ms`);
+            }
+            await sleep(fallDuration);
+            await lockPiece(true, true, true);
         }
 
-        async function lockPiece(animateLanding = false) {
-            if (isAnimating || isGameOver || !activePiece) return;
-            isAnimating = true; stopGravity(); saveState();
+        async function lockPiece(animateLanding = false, isAlreadyAnimating = false, stateIsSaved = false) {
+            if ((isAnimating && !isAlreadyAnimating) || isGameOver || !activePiece) return;
+            isAnimating = true; stopGravity(); if (!stateIsSaved) saveState();
             activePiece.fallProgress = 0;
             activePiece.isLanded = true;
             activePiece.landedAt = null;
@@ -656,12 +677,14 @@
             
             if (mainEl) {
                 mainEl.style.transition = 'none';
+                mainEl.style.removeProperty('--fall-duration');
                 mainEl.style.transform = 'none';
                 mainEl.style.left = `calc(var(--cell-size) * ${activePiece.x})`;
                 mainEl.style.top = `calc(var(--cell-size) * ${activePiece.y})`;
             }
             if (subEl) {
                 subEl.style.transition = 'none';
+                subEl.style.removeProperty('--fall-duration');
                 subEl.style.transform = 'none';
                 subEl.style.left = `calc(var(--cell-size) * ${sub.x})`;
                 subEl.style.top = `calc(var(--cell-size) * ${sub.y})`;
@@ -759,8 +782,18 @@
 
         function render(isFalling = false) {
             const layer = document.getElementById('puyoLayer'); const currentIds = new Set();
+            const gridCells = document.getElementById('gridBg').children;
+            const deathLineSegments = document.querySelectorAll('.death-line-segment');
             for (let y = 0; y < ROWS; y++) {
                 for (let x = 0; x < COLS; x++) {
+                    const cell = board[y][x];
+                    const isConnectedRight = x < COLS - 1 && cell && board[y][x + 1] && cell.color === board[y][x + 1].color && !unconnectedIds.has(cell.id) && !unconnectedIds.has(board[y][x + 1].id);
+                    const isConnectedBelow = y < ROWS - 1 && cell && board[y + 1][x] && cell.color === board[y + 1][x].color && !unconnectedIds.has(cell.id) && !unconnectedIds.has(board[y + 1][x].id);
+                    gridCells[y * COLS + x].className = 'grid-cell' + (isConnectedRight ? ' connected-right' : '') + (isConnectedBelow ? ' connected-below' : '');
+                    if (y === 0) {
+                        const isConnectedAcrossDeathLine = cell && board[1][x] && cell.color === board[1][x].color && !unconnectedIds.has(cell.id) && !unconnectedIds.has(board[1][x].id);
+                        deathLineSegments[x].classList.toggle('connected', !!isConnectedAcrossDeathLine);
+                    }
                     if (board[y][x]) {
                         const item = board[y][x], domId = 'puyo-' + item.id; currentIds.add(domId);
                         let conn = { t:0, r:0, b:0, l:0 };
