@@ -147,10 +147,8 @@
             box-shadow: 0 0 15px rgba(61, 35, 20, 0.4), inset 0 0 12px rgba(0, 0, 0, 0.35); flex-shrink: 0; overflow: hidden; isolation: isolate;
         }
 
-        .grid-layer { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(13, 1fr); pointer-events: none; z-index: -1; }
+        .grid-layer { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(13, 1fr); pointer-events: none; z-index: 0; }
         .grid-cell { border-right: 1px solid rgba(61, 35, 20, 0.18); border-bottom: 1px solid rgba(61, 35, 20, 0.18); }
-        .grid-cell.connected-right { border-right-color: transparent; }
-        .grid-cell.connected-below { border-bottom-color: transparent; }
         .grid-cell:nth-child(6n) { border-right: none; }
         .grid-cell:nth-last-child(-n+6) { border-bottom: none; }
 
@@ -159,9 +157,8 @@
             display: grid; grid-template-columns: repeat(6, 1fr); pointer-events: none; z-index: -1;
         }
         .death-line-segment { border-top: 2px dashed #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.9); }
-        .death-line-segment.connected { border-color: transparent; box-shadow: none; }
 
-        #puyoLayer { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+        #puyoLayer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 
         .puyo-item {
             position: absolute; width: var(--cell-size); height: var(--cell-size); padding: 0;
@@ -503,12 +500,17 @@
             const centeredEyesHTML = `<circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" />`;
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
             const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
-            let connFill = "", connStroke = "";
-            if (conn.r) { connFill += `<rect x="20" y="14" width="25" height="24" fill="${theme.base}" />`; connStroke += `<line x1="37.5" y1="13.123" x2="45" y2="13.123" stroke="${theme.stroke}" stroke-width="2.5" /><line x1="37.5" y1="37.87" x2="45" y2="37.87" stroke="${theme.stroke}" stroke-width="2.5" />`; }
-            if (conn.l) { connFill += `<rect x="0" y="14" width="25" height="24" fill="${theme.base}" />`; connStroke += `<line x1="0" y1="13.123" x2="7.5" y2="13.123" stroke="${theme.stroke}" stroke-width="2.5" /><line x1="0" y1="37.87" x2="7.5" y2="37.87" stroke="${theme.stroke}" stroke-width="2.5" />`; }
-            if (conn.b) { connFill += `<rect x="7.5" y="20" width="30" height="25" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="37.87" x2="7.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" /><line x1="37.5" y1="37.87" x2="37.5" y2="45" stroke="${theme.stroke}" stroke-width="2.5" />`; }
-            if (conn.t) { connFill += `<rect x="7.5" y="0" width="30" height="25" fill="${theme.base}" />`; connStroke += `<line x1="7.5" y1="0" x2="7.5" y2="13.123" stroke="${theme.stroke}" stroke-width="2.5" /><line x1="37.5" y1="0" x2="37.5" y2="13.123" stroke="${theme.stroke}" stroke-width="2.5" />`; }
-            return `<div class="puyo-inner"><svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;"><path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="2.5" stroke-linejoin="round" />${connFill}${connStroke}${highlightHTML}${isGhost ? '' : centeredEyesHTML}<path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" /></svg></div>`;
+            const seamOverlap = 1.2;
+            let connFill = "", connOutline = "";
+            if (conn.r) connFill += `<rect x="20" y="14" width="${25 + seamOverlap}" height="24" fill="${theme.base}" />`;
+            if (conn.l) connFill += `<rect x="${-seamOverlap}" y="14" width="${25 + seamOverlap}" height="24" fill="${theme.base}" />`;
+            if (conn.b) connFill += `<rect x="7.5" y="20" width="30" height="${25 + seamOverlap}" fill="${theme.base}" />`;
+            if (conn.t) connFill += `<rect x="7.5" y="${-seamOverlap}" width="30" height="${25 + seamOverlap}" fill="${theme.base}" />`;
+            if (conn.r) connOutline += `<path d="M 37.5 13.123 H ${45 + seamOverlap} M 37.5 37.87 H ${45 + seamOverlap}" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
+            if (conn.l) connOutline += `<path d="M ${-seamOverlap} 13.123 H 7.5 M ${-seamOverlap} 37.87 H 7.5" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
+            if (conn.b) connOutline += `<path d="M 7.5 37.87 V ${45 + seamOverlap} M 37.5 37.87 V ${45 + seamOverlap}" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
+            if (conn.t) connOutline += `<path d="M 7.5 ${-seamOverlap} V 13.123 M 37.5 ${-seamOverlap} V 13.123" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
+            return `<div class="puyo-inner"><svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;"><path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="2.5" stroke-linejoin="round" />${connFill}${connOutline}${highlightHTML}${isGhost ? '' : centeredEyesHTML}<path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" /></svg></div>`;
         }
 
         function initGrid() { const gridBg = document.getElementById('gridBg'); gridBg.innerHTML = ''; for (let i = 0; i < ROWS * COLS; i++) { const cell = document.createElement('div'); cell.className = 'grid-cell'; gridBg.appendChild(cell); } }
@@ -926,17 +928,10 @@
         function render(isFalling = false) {
             const layer = document.getElementById('puyoLayer'); const currentIds = new Set();
             const gridCells = document.getElementById('gridBg').children;
-            const deathLineSegments = document.querySelectorAll('.death-line-segment');
             for (let y = 0; y < ROWS; y++) {
                 for (let x = 0; x < COLS; x++) {
                     const cell = board[y][x];
-                    const isConnectedRight = x < COLS - 1 && cell && board[y][x + 1] && cell.color === board[y][x + 1].color && !unconnectedIds.has(cell.id) && !unconnectedIds.has(board[y][x + 1].id);
-                    const isConnectedBelow = y < ROWS - 1 && cell && board[y + 1][x] && cell.color === board[y + 1][x].color && !unconnectedIds.has(cell.id) && !unconnectedIds.has(board[y + 1][x].id);
-                    gridCells[y * COLS + x].className = 'grid-cell' + (isConnectedRight ? ' connected-right' : '') + (isConnectedBelow ? ' connected-below' : '');
-                    if (y === 0) {
-                        const isConnectedAcrossDeathLine = cell && board[1][x] && cell.color === board[1][x].color && !unconnectedIds.has(cell.id) && !unconnectedIds.has(board[1][x].id);
-                        deathLineSegments[x].classList.toggle('connected', !!isConnectedAcrossDeathLine);
-                    }
+                    gridCells[y * COLS + x].className = 'grid-cell';
                     if (board[y][x]) {
                         const item = board[y][x], domId = 'puyo-' + item.id; currentIds.add(domId);
                         let conn = { t:0, r:0, b:0, l:0 };
