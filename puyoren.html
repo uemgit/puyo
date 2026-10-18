@@ -765,6 +765,7 @@
                 render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(800);
 
                 for (let pos of toErase) { if (board[pos.y][pos.x]) { let id = board[pos.y][pos.x].id; let el = document.getElementById('puyo-' + id); if (el) el.remove(); board[pos.y][pos.x] = null; } }
+                updateStatsUI();
                 render(); movedIds = await applyGravity();
             }
 
