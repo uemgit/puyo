@@ -232,6 +232,39 @@
         }
         .modal-card:focus { outline: none; }
         .modal-overlay.active .modal-card { transform: scale(1); }
+        .modal-title {
+            position: relative; display: flex; align-items: center; justify-content: center; min-height: 88px;
+            margin: -8px 0 0; isolation: isolate;
+        }
+        .modal-title-text {
+            position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 0;
+            font-family: "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", "Yu Gothic", sans-serif;
+            color: #ffffff; font-size: clamp(44px, 12vw, 58px); font-weight: 1000; line-height: 1;
+            letter-spacing: -4px; white-space: nowrap; paint-order: stroke fill;
+            -webkit-text-stroke: 3px #71320f;
+            filter: drop-shadow(0 3px 0 #71320f) drop-shadow(0 5px 2px rgba(0, 0, 0, 0.35));
+        }
+        .modal-title-text span {
+            display: inline-block; animation: titlePuyoBounce 1.5s ease-in-out infinite;
+            text-shadow: 1px 0 currentColor, -1px 0 currentColor, 0 1px currentColor, 0 -1px currentColor,
+                0.7px 0.7px currentColor, -0.7px 0.7px currentColor, 0.7px -0.7px currentColor, -0.7px -0.7px currentColor;
+        }
+        .modal-title-text span:nth-child(1) { transform: rotate(-12deg); }
+        .modal-title-text span:nth-child(2) { transform: rotate(8deg); animation-delay: 0.12s; }
+        .modal-title-text span:nth-child(3) { transform: rotate(-8deg); animation-delay: 0.24s; }
+        .modal-title-text span:nth-child(4) { transform: rotate(12deg); animation-delay: 0.36s; }
+        @keyframes titlePuyoBounce {
+            0%, 55%, 100% { translate: 0 0; }
+            25% { translate: 0 -8px; }
+            40% { translate: 0 2px; }
+        }
+        .modal-title-puyo {
+            position: absolute; left: -7px; top: -8px; width: 86px; height: 86px;
+            transform: rotate(-18deg); z-index: 1; pointer-events: none;
+        }
+        .modal-title-puyo-right { left: auto; right: -7px; transform: rotate(18deg); }
+        .modal-title-puyo .puyo-inner { width: 100%; height: 100%; }
+        .modal-title-puyo.puyo-landing .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
         .modal-btn-group { display: flex; flex-direction: column; gap: 8px; width: 100%; }
         .modal-choice-btn {
             width: 100%; min-height: 52px; padding: 12px 16px; border-radius: 10px; border: none; font-size: 15px; font-weight: 800; color: #ffffff; cursor: pointer; transition: transform 0.1s; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -255,6 +288,12 @@
 
         .modal-cancel-btn { align-self: center; min-width: 140px; min-height: 44px; background: transparent; border: 1px solid rgba(61, 35, 20, 0.65); border-radius: 10px; color: #3d2314; font-size: 14px; font-weight: 800; cursor: pointer; padding: 10px 24px; }
         .modal-choice-btn:focus-visible, .modal-cancel-btn:focus-visible { outline: 3px solid #fff066; outline-offset: 2px; }
+        @media (max-height: 520px) {
+            .modal-card { padding: 14px 18px; gap: 10px; }
+            .modal-title { min-height: 70px; }
+            .modal-title-text { font-size: 44px; }
+            .modal-title-puyo { width: 70px; height: 70px; }
+        }
         body.game-paused #boardContainer * { animation-play-state: paused !important; }
     </style>
 </head>
@@ -304,6 +343,13 @@
 
     <div id="resetModal" class="modal-overlay active" aria-hidden="false">
         <div class="modal-card" role="dialog" aria-modal="true" aria-label="ゲーム設定" tabindex="-1">
+            <header class="modal-title">
+                <div id="modalTitlePuyo" class="modal-title-puyo" aria-hidden="true"></div>
+                <div id="modalTitlePuyoRight" class="modal-title-puyo modal-title-puyo-right" aria-hidden="true"></div>
+                <div class="modal-title-text" aria-label="ぷよれん">
+                    <span>ぷ</span><span>よ</span><span>れ</span><span>ん</span>
+                </div>
+            </header>
             <div class="modal-btn-group">
                 <button class="modal-choice-btn btn-mode-3" onclick="confirmReset(3)">甘口（3色）で開始</button>
                 <button class="modal-choice-btn btn-mode-4" onclick="confirmReset(4)">中辛（4色）で開始</button>
@@ -339,9 +385,13 @@
         const ROTATIONS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
         const CHAIN_BONUS_TABLE = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
         
-        const SWIPE_UP_RATIO = 0.10;
-        const SWIPE_DOWN_RATIO = 0.07;
-        const SWIPE_LEFTRIGHT_RATIO = 0.07;
+        const SWIPE_UP_RATIO = 0.20;
+        const SWIPE_DROP_RATIO = 0.06;
+        const SWIPE_LEFTRIGHT_RATIO = 0.06;
+
+        const SWIPE_UP_AXIS_RATIO = 0.45;
+        const SWIPE_DOWN_AXIS_RATIO = 1.0;
+        const ALL_CLEAR_SCORE_BONUS = 2100;
 
         function getChainBonus(chain) { if (chain <= 1) return 0; if (chain < CHAIN_BONUS_TABLE.length) return CHAIN_BONUS_TABLE[chain]; return 512; }
         function getConnectBonus(count) { if (count <= 4) return 0; if (count <= 10) return count - 3; return 10; }
@@ -353,6 +403,8 @@
         let pausedLockDelayRemaining = null;
         let scoreResetHoldStartedAt = null;
         let scoreResetHoldFrame = null;
+        let modalTitlePuyoTimer = null;
+        let modalTitlePuyoRightTimer = null;
 
         function sleep(ms) {
             return new Promise(resolve => {
@@ -387,7 +439,7 @@
 
         let activeColorPalette = [], board = [], puyoQueue = [], activePiece = null, historyStack = [];
         let maxChainCount = 0, currentAllClearCount = 0, maxAllClearCount = 0, totalPoppedCount = 0, currentScore = 0, maxScore = 0;
-        let currentColorCount = 4, isAnimating = false, isGameOver = false, nextPuyoId = 1, unconnectedIds = new Set();
+        let currentColorCount = 4, isAnimating = false, isDropping = false, isGameOver = false, nextPuyoId = 1, unconnectedIds = new Set();
         
         let gravityLevel = 0, gravityEnabled = false, gravityInterval = 1500;
         let gravityRAF = null, lastTime = null;
@@ -488,7 +540,7 @@
                 gravityEnabled = gravityLevel > 0;
                 gravityInterval = gravityEnabled ? GRAVITY_INTERVALS[gravityLevel] : 1500;
                 updateGravityControl();
-                historyStack = []; unconnectedIds.clear(); isAnimating = false; initGrid(); document.getElementById('puyoLayer').innerHTML = ''; updateStatsUI(); updateUndoBtn();
+                historyStack = []; unconnectedIds.clear(); isAnimating = false; isDropping = false; initGrid(); document.getElementById('puyoLayer').innerHTML = ''; updateStatsUI(); updateUndoBtn();
                 if (isGameOver) { document.getElementById('gameOverMask').classList.remove('hidden'); } else { document.getElementById('gameOverMask').classList.add('hidden'); if (!activePiece) spawnPiece(); }
                 render(); return true;
             } catch (e) { return false; }
@@ -558,6 +610,7 @@
             const modal = document.getElementById('resetModal');
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
+            startModalTitlePuyoAnimation();
             pauseGame();
             stopGravity();
             saveResumeData();
@@ -568,9 +621,38 @@
             const modal = document.getElementById('resetModal');
             modal.classList.remove('active');
             modal.setAttribute('aria-hidden', 'true');
+            stopModalTitlePuyoAnimation();
             document.getElementById('scoreResetStatus').textContent = '';
             resumeGame();
             document.getElementById('pauseButton').focus();
+        }
+
+        function startModalTitlePuyoAnimation() {
+            stopModalTitlePuyoAnimation();
+            const schedulePuyoAnimation = (puyoId, setTimer) => {
+                const titlePuyo = document.getElementById(puyoId);
+                const color = 1 + Math.floor(Math.random() * Object.keys(MASTER_PUYO_THEMES).length);
+                titlePuyo.innerHTML = createPuyoSVG(color);
+                const animateAndSchedule = () => {
+                    if (!document.getElementById('resetModal').classList.contains('active')) return;
+                    titlePuyo.classList.remove('puyo-landing');
+                    void titlePuyo.offsetWidth;
+                    titlePuyo.classList.add('puyo-landing');
+                    setTimer(setTimeout(animateAndSchedule, 3000 + Math.random() * 2000));
+                };
+                setTimer(setTimeout(animateAndSchedule, 3000 + Math.random() * 2000));
+            };
+            schedulePuyoAnimation('modalTitlePuyo', timer => { modalTitlePuyoTimer = timer; });
+            schedulePuyoAnimation('modalTitlePuyoRight', timer => { modalTitlePuyoRightTimer = timer; });
+        }
+
+        function stopModalTitlePuyoAnimation() {
+            for (const timer of [modalTitlePuyoTimer, modalTitlePuyoRightTimer]) {
+                if (timer !== null) clearTimeout(timer);
+            }
+            modalTitlePuyoTimer = null;
+            modalTitlePuyoRightTimer = null;
+            document.querySelectorAll('.modal-title-puyo').forEach(puyo => puyo.classList.remove('puyo-landing'));
         }
         
         function confirmReset(selectedColors) {
@@ -582,7 +664,7 @@
         function startGame() {
             gameSessionId++;
             pickColorPalette(); initBoard(); document.getElementById('puyoLayer').innerHTML = '';
-            puyoQueue = []; historyStack = []; unconnectedIds.clear(); isGameOver = false; isAnimating = false; lastRotateFailedState = null;
+            puyoQueue = []; historyStack = []; unconnectedIds.clear(); isGameOver = false; isAnimating = false; isDropping = false; lastRotateFailedState = null;
             currentAllClearCount = 0; totalPoppedCount = 0; currentScore = 0;
             updateStatsUI(); document.getElementById('gameOverMask').classList.add('hidden'); updateUndoBtn(); refillQueue(); spawnPiece(); render();
         }
@@ -684,14 +766,14 @@
         }
 
         function movePiece(dx) {
-            if (isPaused || isAnimating || isGameOver || !activePiece) return;
+            if (isPaused || isAnimating || isDropping || isGameOver || !activePiece) return;
             if (lockPieceIfReady()) return;
             const test = { ...activePiece, x: activePiece.x + dx };
             if (canPlacePiece(test)) { activePiece = test; updateLandingState(); ensureGravityRunning(); lastRotateFailedState = null; render(); triggerVibration(10); }
         }
 
         function rotatePiece(dir) {
-            if (isPaused || isAnimating || isGameOver || !activePiece) return;
+            if (isPaused || isAnimating || isDropping || isGameOver || !activePiece) return;
             if (lockPieceIfReady()) return;
             
             let currentRot = activePiece.rot || 0;
@@ -768,7 +850,7 @@
         function updateUndoBtn() { document.getElementById('undoBtn').disabled = (historyStack.length === 0); }
 
         async function dropPiece() {
-            if (isPaused || isAnimating || isGameOver || !activePiece) return;
+            if (isPaused || isAnimating || isDropping || isGameOver || !activePiece) return;
             const sessionId = gameSessionId;
             let dist = 0;
             while (true) { let test = { ...activePiece, y: activePiece.y + dist + 1 }; if (canPlacePiece(test)) dist++; else break; }
@@ -779,6 +861,7 @@
 
             saveState();
             isAnimating = true;
+            isDropping = true;
             stopGravity();
             activePiece.y += dist;
             activePiece.fallProgress = 0;
@@ -790,6 +873,7 @@
                 if (element) element.style.setProperty('--fall-duration', `${fallDuration}ms`);
             }
             await sleep(fallDuration);
+            isDropping = false;
             if (sessionId !== gameSessionId) return;
             await lockPiece(true, true, true);
         }
@@ -908,7 +992,18 @@
             }
 
             updateStatsUI();
-            if (currentChain > 0 && isBoardEmpty()) { currentAllClearCount++; if (currentAllClearCount > maxAllClearCount) maxAllClearCount = currentAllClearCount; updateStatsUI(); showAllClearPopup(); triggerVibration([50, 30, 50]); await sleep(800); if (sessionId !== gameSessionId) return; }
+            if (currentChain > 0 && isBoardEmpty()) {
+                currentAllClearCount++;
+                if (currentAllClearCount > maxAllClearCount) maxAllClearCount = currentAllClearCount;
+                currentScore += ALL_CLEAR_SCORE_BONUS;
+                if (currentScore > maxScore) maxScore = currentScore;
+                updateStatsUI();
+                saveResumeData();
+                showAllClearPopup();
+                triggerVibration([50, 30, 50]);
+                await sleep(800);
+                if (sessionId !== gameSessionId) return;
+            }
             isAnimating = false; if (!isGameOver) { spawnPiece(); render(); }
         }
 
@@ -999,13 +1094,26 @@
         let touchStartX = 0, touchStartY = 0, touchLastX = 0, touchStartTime = 0, isGameGesture = false, hasSwiped = false;
         document.addEventListener('touchstart', (e) => { if (isPaused || e.target.closest('.left-panel, .right-panel, button, .modal-card, .top-bar')) { isGameGesture = false; return; } isGameGesture = true; hasSwiped = false; const t = e.touches[0]; touchStartX = touchLastX = t.clientX; touchStartY = t.clientY; touchStartTime = Date.now(); }, { passive: false });
         document.addEventListener('touchmove', (e) => { 
-            if (!isGameGesture) return; e.preventDefault(); const t = e.touches[0]; const dx = t.clientX - touchLastX; const swipeThresh = window.innerWidth * SWIPE_LEFTRIGHT_RATIO; 
-            if (Math.abs(dx) > swipeThresh) { if (dx > 0) movePiece(1); else movePiece(-1); touchLastX = t.clientX; hasSwiped = true; } 
-            const dy = t.clientY - touchStartY; 
-            if (dy > window.innerHeight * SWIPE_UP_RATIO) { 
+            if (!isGameGesture) return; e.preventDefault(); const t = e.touches[0];
+            const dy = t.clientY - touchStartY;
+            const totalDx = t.clientX - touchStartX;
+            const isUpSwipe = Math.abs(totalDx) <= Math.abs(dy) * SWIPE_UP_AXIS_RATIO;
+            const isDownSwipe = Math.abs(totalDx) <= Math.abs(dy) * SWIPE_DOWN_AXIS_RATIO;
+            const downSwipeThreshold = window.innerWidth * SWIPE_DROP_RATIO;
+            if (dy > downSwipeThreshold) hasSwiped = true;
+            if (isDownSwipe && dy > downSwipeThreshold) {
                 dropPiece(); isGameGesture = false; 
-            } else if (dy < -window.innerHeight * SWIPE_DOWN_RATIO) {
+                return;
+            } else if (isUpSwipe && dy < -window.innerHeight * SWIPE_UP_RATIO) {
                 undo(); isGameGesture = false;
+                return;
+            }
+            const dx = t.clientX - touchLastX;
+            const swipeThresh = window.innerWidth * SWIPE_LEFTRIGHT_RATIO;
+            if (!isDownSwipe && Math.abs(dx) > swipeThresh) {
+                if (dx > 0) movePiece(1); else movePiece(-1);
+                touchLastX = t.clientX;
+                hasSwiped = true;
             }
         }, { passive: false });
         document.addEventListener('touchend', (e) => { if (!isGameGesture || hasSwiped) return; const touchDuration = Date.now() - touchStartTime; if (touchDuration < 350) { const screenX = e.changedTouches[0].clientX; const screenW = window.innerWidth; if (screenX < screenW / 2) rotatePiece(-1); else rotatePiece(1); } }, { passive: false });
