@@ -356,7 +356,7 @@
                 <button class="modal-choice-btn btn-mode-5" onclick="confirmReset(5)">辛口（5色）で開始</button>
             </div>
 
-            <button class="modal-cancel-btn" onclick="closeResetModal()">とじる</button>
+            <button class="modal-cancel-btn" onclick="closeResetModal()">つづき</button>
             <section class="score-reset-section">
                 <div id="scoreResetStatus" class="score-reset-status" aria-live="polite"></div>
                 <button id="scoreResetBtn" class="score-reset-btn" type="button" aria-pressed="false" aria-label="スコアリセット。5秒間長押し">
@@ -385,7 +385,7 @@
         const ROTATIONS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
         const CHAIN_BONUS_TABLE = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
         
-        const SWIPE_UP_RATIO = 0.20;
+        const SWIPE_UP_RATIO = 0.15;
         const SWIPE_DROP_RATIO = 0.06;
         const SWIPE_LEFTRIGHT_RATIO = 0.06;
 
