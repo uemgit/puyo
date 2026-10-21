@@ -740,7 +740,7 @@
         }
 
         function getRandomPupilOffset() {
-            const angle = Math.random() * Math.PI * 2, distance = 1.2 + Math.random() * 0.5;
+            const angle = Math.random() * Math.PI * 2, distance = 2.2 + Math.random() * 0.7;
             return { x: Math.cos(angle) * distance, y: Math.sin(angle) * distance };
         }
 
@@ -771,7 +771,7 @@
                     if (group.length === 2) {
                         const partner = group[1 - index];
                         const distance = Math.hypot(partner.x - x, partner.y - y);
-                        const offset = { x: ((partner.x - x) / distance) * 1.7, y: ((partner.y - y) / distance) * 1.7 };
+                        const offset = { x: ((partner.x - x) / distance) * 2.6, y: ((partner.y - y) / distance) * 2.6 };
                         cell.pupilOffsets = [offset, { ...offset }];
                     } else if (group.length >= 3) {
                         const neighbors = group.filter(({ x: neighborX, y: neighborY }) =>
@@ -779,7 +779,7 @@
                         );
                         if (neighbors.length === 1) {
                             const neighbor = neighbors[0];
-                            const offset = { x: (neighbor.x - x) * 1.7, y: (neighbor.y - y) * 1.7 };
+                            const offset = { x: (neighbor.x - x) * 2.6, y: (neighbor.y - y) * 2.6 };
                             cell.pupilOffsets = [offset, { ...offset }];
                         } else if (neighbors.length >= 2) {
                             cell.pupilOffsets = [getRandomPupilOffset(), getRandomPupilOffset()];
