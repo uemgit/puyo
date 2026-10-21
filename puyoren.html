@@ -240,24 +240,15 @@
             position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 0;
             font-family: "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", "Yu Gothic", sans-serif;
             color: #ffffff; font-size: clamp(44px, 12vw, 58px); font-weight: 1000; line-height: 1;
-            letter-spacing: -4px; white-space: nowrap; paint-order: stroke fill;
-            -webkit-text-stroke: 3px #71320f;
-            filter: drop-shadow(0 3px 0 #71320f) drop-shadow(0 5px 2px rgba(0, 0, 0, 0.35));
+            letter-spacing: -4px; white-space: nowrap;
         }
         .modal-title-text span {
-            display: inline-block; animation: titlePuyoBounce 1.5s ease-in-out infinite;
-            text-shadow: 1px 0 currentColor, -1px 0 currentColor, 0 1px currentColor, 0 -1px currentColor,
-                0.7px 0.7px currentColor, -0.7px 0.7px currentColor, 0.7px -0.7px currentColor, -0.7px -0.7px currentColor;
+            display: inline-block;
         }
         .modal-title-text span:nth-child(1) { transform: rotate(-12deg); }
-        .modal-title-text span:nth-child(2) { transform: rotate(8deg); animation-delay: 0.12s; }
-        .modal-title-text span:nth-child(3) { transform: rotate(-8deg); animation-delay: 0.24s; }
-        .modal-title-text span:nth-child(4) { transform: rotate(12deg); animation-delay: 0.36s; }
-        @keyframes titlePuyoBounce {
-            0%, 55%, 100% { translate: 0 0; }
-            25% { translate: 0 -8px; }
-            40% { translate: 0 2px; }
-        }
+        .modal-title-text span:nth-child(2) { transform: rotate(8deg); }
+        .modal-title-text span:nth-child(3) { transform: rotate(-8deg); }
+        .modal-title-text span:nth-child(4) { transform: rotate(12deg); }
         .modal-title-puyo {
             position: absolute; left: -7px; top: -8px; width: 86px; height: 86px;
             transform: rotate(-18deg); z-index: 1; pointer-events: none;
@@ -541,15 +532,17 @@
                 gravityInterval = gravityEnabled ? GRAVITY_INTERVALS[gravityLevel] : 1500;
                 updateGravityControl();
                 historyStack = []; unconnectedIds.clear(); isAnimating = false; isDropping = false; initGrid(); document.getElementById('puyoLayer').innerHTML = ''; updateStatsUI(); updateUndoBtn();
+                updatePupilDirections();
                 if (isGameOver) { document.getElementById('gameOverMask').classList.remove('hidden'); } else { document.getElementById('gameOverMask').classList.add('hidden'); if (!activePiece) spawnPiece(); }
                 render(); return true;
             } catch (e) { return false; }
         }
 
-        function createPuyoSVG(colorIndex, isGhost = false, conn = {t:0, r:0, b:0, l:0}) {
+        function createPuyoSVG(colorIndex, isGhost = false, conn = {t:0, r:0, b:0, l:0}, pupilOffsets = null) {
             if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
             const theme = MASTER_PUYO_THEMES[colorIndex];
-            const centeredEyesHTML = `<circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" />`;
+            const pupils = pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+            const centeredEyesHTML = `<circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" />`;
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
             const baseShapePath = "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
             const seamOverlap = 1.2;
@@ -727,6 +720,89 @@
         function getSubPos(piece) { let rotIdx = (piece.rot || 0) % 4; return { x: piece.x + ROTATIONS[rotIdx].dx, y: piece.y + ROTATIONS[rotIdx].dy }; }
         function isValidPos(x, y) { if (x < 0 || x >= COLS || y >= ROWS) return false; if (y >= 0 && board[y][x] !== null) return false; return true; }
         function canPlacePiece(piece) { return isValidPos(piece.x, piece.y) && isValidPos(getSubPos(piece).x, getSubPos(piece).y); }
+
+        function getConnectedPuyos(start) {
+            const color = board[start.y][start.x]?.color;
+            if (!color) return [];
+            const group = [], queue = [start], visited = new Set([`${start.x},${start.y}`]);
+            while (queue.length > 0) {
+                const current = queue.shift();
+                group.push(current);
+                for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+                    const x = current.x + dx, y = current.y + dy, key = `${x},${y}`;
+                    if (x >= 0 && x < COLS && y >= 0 && y < ROWS && !visited.has(key) && board[y][x]?.color === color) {
+                        visited.add(key);
+                        queue.push({ x, y });
+                    }
+                }
+            }
+            return group;
+        }
+
+        function getRandomPupilOffset() {
+            const angle = Math.random() * Math.PI * 2, distance = 1.2 + Math.random() * 0.5;
+            return { x: Math.cos(angle) * distance, y: Math.sin(angle) * distance };
+        }
+
+        function updatePupilDirections(puyoIds = null) {
+            const starts = [];
+            if (puyoIds) {
+                const ids = new Set(puyoIds);
+                for (let y = 0; y < ROWS; y++) {
+                    for (let x = 0; x < COLS; x++) {
+                        if (board[y][x] && ids.has(board[y][x].id)) starts.push({ x, y });
+                    }
+                }
+            } else {
+                for (let y = 0; y < ROWS; y++) {
+                    for (let x = 0; x < COLS; x++) {
+                        if (board[y][x]) starts.push({ x, y });
+                    }
+                }
+            }
+
+            const processed = new Set();
+            for (const start of starts) {
+                const group = getConnectedPuyos(start);
+                if (group.some(({ x, y }) => processed.has(board[y][x].id))) continue;
+                group.forEach(({ x, y }) => processed.add(board[y][x].id));
+                group.forEach(({ x, y }, index) => {
+                    const cell = board[y][x];
+                    if (group.length === 2) {
+                        const partner = group[1 - index];
+                        const distance = Math.hypot(partner.x - x, partner.y - y);
+                        const offset = { x: ((partner.x - x) / distance) * 1.7, y: ((partner.y - y) / distance) * 1.7 };
+                        cell.pupilOffsets = [offset, { ...offset }];
+                    } else if (group.length >= 3) {
+                        const neighbors = group.filter(({ x: neighborX, y: neighborY }) =>
+                            Math.abs(neighborX - x) + Math.abs(neighborY - y) === 1
+                        );
+                        if (neighbors.length === 1) {
+                            const neighbor = neighbors[0];
+                            const offset = { x: (neighbor.x - x) * 1.7, y: (neighbor.y - y) * 1.7 };
+                            cell.pupilOffsets = [offset, { ...offset }];
+                        } else if (neighbors.length >= 2) {
+                            cell.pupilOffsets = [getRandomPupilOffset(), getRandomPupilOffset()];
+                        } else {
+                            cell.pupilOffsets = [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+                        }
+                    } else {
+                        cell.pupilOffsets = [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+                    }
+                });
+            }
+        }
+
+        function centerPupils(puyoIds) {
+            const ids = new Set(puyoIds);
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    if (board[y][x] && ids.has(board[y][x].id)) {
+                        board[y][x].pupilOffsets = [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+                    }
+                }
+            }
+        }
 
         function updateLandingState(now = Date.now()) {
             if (!activePiece) return;
@@ -921,22 +997,36 @@
 
             placedIds.forEach(id => { for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { if (board[y][x] && board[y][x].id === id) { board[y][x].isLanding = false; } } } });
             placedIds.forEach(id => unconnectedIds.delete(id)); 
+            updatePupilDirections(placedIds);
             render(); 
             await resolveChains();
         }
 
         async function applyGravity() {
             const sessionId = gameSessionId;
-            let movedIds = [];
+            let movedIds = [], oldGroupIdsById = new Map(), visitedIds = new Set();
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    const cell = board[y][x];
+                    if (!cell || visitedIds.has(cell.id)) continue;
+                    const groupIds = getConnectedPuyos({ x, y }).map(({ x: groupX, y: groupY }) => board[groupY][groupX].id);
+                    groupIds.forEach(id => {
+                        visitedIds.add(id);
+                        oldGroupIdsById.set(id, groupIds);
+                    });
+                }
+            }
             for (let x = 0; x < COLS; x++) { let writeY = ROWS - 1; for (let y = ROWS - 1; y >= 0; y--) { if (board[y][x]) { if (writeY !== y) { board[writeY][x] = board[y][x]; board[y][x] = null; movedIds.push(board[writeY][x].id); } writeY--; } } }
             if (movedIds.length > 0) { 
+                const affectedIds = new Set(movedIds);
+                movedIds.forEach(id => oldGroupIdsById.get(id)?.forEach(groupId => affectedIds.add(groupId)));
                 movedIds.forEach(id => unconnectedIds.add(id)); render(true); await sleep(120);
                 if (sessionId !== gameSessionId) return [];
                 movedIds.forEach(id => { for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { if (board[y][x] && board[y][x].id === id) { board[y][x].isLanding = true; } } } });
                 render(); await sleep(300);
                 if (sessionId !== gameSessionId) return [];
                 movedIds.forEach(id => { for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { if (board[y][x] && board[y][x].id === id) { board[y][x].isLanding = false; } } } });
-                movedIds.forEach(id => unconnectedIds.delete(id)); render();
+                movedIds.forEach(id => unconnectedIds.delete(id)); updatePupilDirections([...affectedIds]); render();
             } return movedIds;
         }
 
@@ -982,6 +1072,7 @@
 
                 let sumX = 0, sumY = 0;
                 for (let pos of toErase) { sumX += pos.x; sumY += pos.y; board[pos.y][pos.x].isPopping = true; }
+                centerPupils(toErase.map(({ x, y }) => board[y][x].id));
                 render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(800);
                 if (sessionId !== gameSessionId) return;
 
@@ -1038,7 +1129,12 @@
                         }
                         let connStr = `${conn.t}${conn.r}${conn.b}${conn.l}`;
                         let el = document.getElementById(domId); if (!el) { el = document.createElement('div'); el.id = domId; el.className = 'puyo-item'; layer.appendChild(el); }
-                        if (el.getAttribute('data-conn') !== connStr) { el.innerHTML = createPuyoSVG(item.color, false, conn); el.setAttribute('data-conn', connStr); }
+                        const pupilState = JSON.stringify(item.pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }]);
+                        if (el.getAttribute('data-conn') !== connStr || el.getAttribute('data-pupils') !== pupilState) {
+                            el.innerHTML = createPuyoSVG(item.color, false, conn, item.pupilOffsets);
+                            el.setAttribute('data-conn', connStr);
+                            el.setAttribute('data-pupils', pupilState);
+                        }
                         el.className = 'puyo-item' + (isFalling ? ' falling' : ''); el.style.left = `calc(var(--cell-size) * ${x})`; el.style.top = `calc(var(--cell-size) * ${y})`; el.style.transform = 'none';
                         if (item.isPopping) el.classList.add('puyo-pop');
                         if (item.isLanding) el.classList.add('puyo-landing'); else el.classList.remove('puyo-landing');
