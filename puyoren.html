@@ -177,7 +177,8 @@
         }
         .puyo-item.puyo-pop { z-index: 20; }
         .puyo-pop > .puyo-inner { animation: puyoPopBody 0.7s ease-in forwards; }
-        .puyo-burst-fragments { position: absolute; inset: 0; pointer-events: none; }
+        #puyoBurstLayer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 15; }
+        .puyo-burst-fragments { position: absolute; pointer-events: none; }
         .puyo-burst-fragment { position: absolute; top: 42%; left: 50%; width: 48%; height: 48%; opacity: 0; will-change: transform, opacity; }
         @keyframes puyoPopBody {
             0% { transform: scale(1) rotate(0); filter: brightness(1); opacity: 1; }
@@ -339,6 +340,8 @@
         </div>
     </div>
 
+    <div id="puyoBurstLayer" aria-hidden="true"></div>
+
     <div id="resetModal" class="modal-overlay active" aria-hidden="false">
         <div class="modal-card" role="dialog" aria-modal="true" aria-label="ゲーム設定" tabindex="-1">
             <header class="modal-title">
@@ -398,6 +401,7 @@
         let isPaused = true, gameSessionId = 0;
         const activeDelays = new Set();
         let pausedBoardAnimations = [];
+        let pausedBurstAnimations = [];
         let pausedLockDelayRemaining = null;
         let scoreResetHoldStartedAt = null;
         let scoreResetHoldFrame = null;
@@ -538,7 +542,7 @@
                 gravityEnabled = gravityLevel > 0;
                 gravityInterval = gravityEnabled ? GRAVITY_INTERVALS[gravityLevel] : 1500;
                 updateGravityControl();
-                historyStack = []; unconnectedIds.clear(); isAnimating = false; isDropping = false; initGrid(); document.getElementById('puyoLayer').innerHTML = ''; updateStatsUI(); updateUndoBtn();
+                historyStack = []; unconnectedIds.clear(); isAnimating = false; isDropping = false; initGrid(); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects(); updateStatsUI(); updateUndoBtn();
                 updatePupilDirections();
                 if (isGameOver) { document.getElementById('gameOverMask').classList.remove('hidden'); } else { document.getElementById('gameOverMask').classList.add('hidden'); if (!activePiece) spawnPiece(); }
                 render(); return true;
@@ -589,6 +593,9 @@
             pausedBoardAnimations = document.getElementById('boardContainer').getAnimations({ subtree: true })
                 .filter(animation => animation.playState !== 'finished' && animation.playState !== 'idle');
             pausedBoardAnimations.forEach(animation => animation.pause());
+            pausedBurstAnimations = document.getElementById('puyoBurstLayer').getAnimations({ subtree: true })
+                .filter(animation => animation.playState !== 'finished' && animation.playState !== 'idle');
+            pausedBurstAnimations.forEach(animation => animation.pause());
         }
 
         function resumeGame() {
@@ -603,7 +610,17 @@
                 if (animation.playState === 'paused') animation.play();
             });
             pausedBoardAnimations = [];
+            pausedBurstAnimations.forEach(animation => {
+                if (animation.playState === 'paused') animation.play();
+            });
+            pausedBurstAnimations = [];
             if (!isAnimating && activePiece && !isGameOver) startGravity();
+        }
+
+        function clearPuyoBurstEffects() {
+            const burstLayer = document.getElementById('puyoBurstLayer');
+            burstLayer.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
+            burstLayer.replaceChildren();
         }
 
         function openResetModal() {
@@ -663,7 +680,7 @@
 
         function startGame() {
             gameSessionId++;
-            pickColorPalette(); initBoard(); document.getElementById('puyoLayer').innerHTML = '';
+            pickColorPalette(); initBoard(); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects();
             puyoQueue = []; historyStack = []; unconnectedIds.clear(); isGameOver = false; isAnimating = false; isDropping = false; lastRotateFailedState = null;
             currentAllClearCount = 0; totalPoppedCount = 0; currentScore = 0;
             updateStatsUI(); document.getElementById('gameOverMask').classList.add('hidden'); updateUndoBtn(); refillQueue(); spawnPiece(); render();
@@ -926,7 +943,7 @@
             }
 
             unconnectedIds.clear(); isGameOver = false; lastRotateFailedState = null;
-            document.getElementById('gameOverMask').classList.add('hidden'); document.getElementById('puyoLayer').innerHTML = '';
+            document.getElementById('gameOverMask').classList.add('hidden'); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects();
             updateStatsUI(); updateUndoBtn(); render(); saveResumeData(); if (activePiece) startGravity();
         }
 
@@ -1088,19 +1105,6 @@
                         let id = board[pos.y][pos.x].id;
                         let el = document.getElementById('puyo-' + id);
                         if (el) {
-                            const fragments = el.querySelector('.puyo-burst-fragments');
-                            if (fragments) {
-                                fragments.style.inset = 'auto';
-                                fragments.style.left = el.style.left;
-                                fragments.style.top = el.style.top;
-                                fragments.style.width = 'var(--cell-size)';
-                                fragments.style.height = 'var(--cell-size)';
-                                fragments.style.zIndex = '11';
-                                document.getElementById('puyoLayer').appendChild(fragments);
-                                Promise.allSettled(Array.from(fragments.querySelectorAll('.puyo-burst-fragment'))
-                                    .flatMap(fragment => fragment.getAnimations().map(animation => animation.finished)))
-                                    .then(() => fragments.remove());
-                            }
                             el.remove();
                         }
                         board[pos.y][pos.x] = null;
@@ -1194,10 +1198,17 @@
                         el.className = 'puyo-item' + (isFalling ? ' falling' : ''); el.style.left = `calc(var(--cell-size) * ${x})`; el.style.top = `calc(var(--cell-size) * ${y})`; el.style.transform = 'none';
                         if (item.isPopping) {
                             el.classList.add('puyo-pop');
-                            if (!el.querySelector('.puyo-burst-fragments')) {
+                            const burstId = `puyo-burst-${item.id}`;
+                            if (!document.getElementById(burstId)) {
+                                const bounds = el.getBoundingClientRect();
                                 const fragments = document.createElement('div');
                                 fragments.className = 'puyo-burst-fragments';
+                                fragments.id = burstId;
                                 fragments.setAttribute('aria-hidden', 'true');
+                                fragments.style.left = `${bounds.left}px`;
+                                fragments.style.top = `${bounds.top}px`;
+                                fragments.style.width = `${bounds.width}px`;
+                                fragments.style.height = `${bounds.height}px`;
                                 ['left', 'right'].forEach(side => {
                                     const fragment = document.createElement('div');
                                     fragment.className = `puyo-burst-fragment puyo-burst-fragment--${side}`;
@@ -1205,10 +1216,14 @@
                                     fragments.appendChild(fragment);
                                     animatePuyoBurst(fragment, side === 'left' ? -1 : 1);
                                 });
-                                el.appendChild(fragments);
+                                const burstLayer = document.getElementById('puyoBurstLayer');
+                                burstLayer.appendChild(fragments);
+                                Promise.allSettled(Array.from(fragments.querySelectorAll('.puyo-burst-fragment'))
+                                    .flatMap(fragment => fragment.getAnimations().map(animation => animation.finished)))
+                                    .then(() => fragments.remove());
                             }
                         } else {
-                            el.querySelector('.puyo-burst-fragments')?.remove();
+                            document.getElementById(`puyo-burst-${item.id}`)?.remove();
                         }
                         if (item.isLanding) el.classList.add('puyo-landing'); else el.classList.remove('puyo-landing');
                     }
