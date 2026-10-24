@@ -182,21 +182,21 @@
         .puyo-burst-fragment { position: absolute; top: 42%; left: 50%; width: 48%; height: 48%; opacity: 0; will-change: transform, opacity; }
         @keyframes puyoPopBody {
             0% { transform: scale(1) rotate(0); opacity: 1; }
-            7% { transform: scale(1.05) rotate(-3deg); opacity: 1; }
-            14% { transform: scale(1.1) rotate(4deg); opacity: 1; }
-            21% { transform: scale(1.07) rotate(-4deg); opacity: 1; }
-            28% { transform: scale(1.1) rotate(4deg); opacity: 1; }
-            35% { transform: scale(1.07) rotate(-4deg); opacity: 1; }
-            42% { transform: scale(1.1) rotate(4deg); opacity: 1; }
-            49% { transform: scale(1.07) rotate(-4deg); opacity: 1; }
-            56% { transform: scale(1.1) rotate(4deg); opacity: 1; }
-            63% { transform: scale(1.07) rotate(-4deg); opacity: 1; }
-            70% { transform: scale(1.1) rotate(4deg); opacity: 1; }
-            77% { transform: scale(1.07) rotate(-4deg); opacity: 1; }
-            84% { transform: scale(1.1) rotate(4deg); opacity: 1; }
-            91% { transform: scale(1.07) rotate(-4deg); opacity: 1; }
-            99.9% { transform: scale(1.1) rotate(4deg); opacity: 1; }
-            100% { transform: scale(1.1) rotate(4deg); opacity: 0; }
+            7% { transform: scale(1.1) rotate(-4deg); opacity: 1; }
+            14% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            21% { transform: scale(1.12) rotate(-5deg); opacity: 1; }
+            28% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            35% { transform: scale(1.12) rotate(-5deg); opacity: 1; }
+            42% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            49% { transform: scale(1.12) rotate(-5deg); opacity: 1; }
+            56% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            63% { transform: scale(1.12) rotate(-5deg); opacity: 1; }
+            70% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            77% { transform: scale(1.12) rotate(-5deg); opacity: 1; }
+            84% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            91% { transform: scale(1.12) rotate(-5deg); opacity: 1; }
+            99.9% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1.2) rotate(5deg); opacity: 0; }
         }
         .puyo-item.puyo-landing:not(.active-puyo) { transition: none !important; }
         .puyo-landing .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
@@ -1218,12 +1218,12 @@
                                 fragments.style.top = `${bounds.top}px`;
                                 fragments.style.width = `${bounds.width}px`;
                                 fragments.style.height = `${bounds.height}px`;
-                                ['left', 'right'].forEach(side => {
+                                [-1, 0, 1].forEach(direction => {
                                     const fragment = document.createElement('div');
-                                    fragment.className = `puyo-burst-fragment puyo-burst-fragment--${side}`;
+                                    fragment.className = 'puyo-burst-fragment';
                                     fragment.innerHTML = createPuyoSVG(item.color, true);
                                     fragments.appendChild(fragment);
-                                    animatePuyoBurst(fragment, side === 'left' ? -1 : 1);
+                                    animatePuyoBurst(fragment, direction);
                                 });
                                 const burstLayer = document.getElementById('puyoBurstLayer');
                                 burstLayer.appendChild(fragments);
