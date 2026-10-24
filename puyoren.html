@@ -175,13 +175,20 @@
         .puyo-inner {
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center center;
         }
-        .puyo-pop .puyo-inner { animation: slowPopAnim 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        @keyframes slowPopAnim {
-            0% { transform: scale(1); filter: brightness(1); opacity: 1; }
-            30% { transform: scale(1.18); filter: brightness(1.4); opacity: 1; }
-            100% { transform: scale(0.1); filter: brightness(1.8); opacity: 0; }
+        .puyo-item.puyo-pop { z-index: 20; }
+        .puyo-pop > .puyo-inner { animation: puyoPopBody 0.7s ease-in forwards; }
+        .puyo-burst-fragments { position: absolute; inset: 0; pointer-events: none; }
+        .puyo-burst-fragment { position: absolute; top: 42%; left: 50%; width: 48%; height: 48%; opacity: 0; will-change: transform, opacity; }
+        @keyframes puyoPopBody {
+            0% { transform: scale(1) rotate(0); filter: brightness(1); opacity: 1; }
+            7% { transform: scale(1.16) rotate(-5deg); filter: brightness(1.15); opacity: 1; }
+            14% { transform: scale(1.3) rotate(5deg); filter: brightness(1.3); opacity: 1; }
+            21% { transform: scale(1.24) rotate(-5deg); filter: brightness(1.4); opacity: 1; }
+            28% { transform: scale(1.34) rotate(4deg); filter: brightness(1.5); opacity: 1; }
+            35% { transform: scale(1.2) rotate(-2deg); filter: brightness(1.6); opacity: 0.9; }
+            65% { transform: scale(0.58) rotate(0); filter: brightness(1.8); opacity: 0.55; }
+            100% { transform: scale(0.05) rotate(0); filter: brightness(2); opacity: 0; }
         }
-
         .puyo-item.puyo-landing:not(.active-puyo) { transition: none !important; }
         .puyo-landing .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
         @keyframes jellyLandingAnim {
@@ -352,7 +359,7 @@
                 <div id="scoreResetStatus" class="score-reset-status" aria-live="polite"></div>
                 <button id="scoreResetBtn" class="score-reset-btn" type="button" aria-pressed="false" aria-label="スコアリセット。5秒間長押し">
                     <span class="score-reset-progress" aria-hidden="true"></span>
-                    <span class="score-reset-label">スコアリセット</span>
+                    <span class="score-reset-label">⚙スコアリセット</span>
                 </button>
             </section>
         </div>
@@ -1073,10 +1080,32 @@
                 let sumX = 0, sumY = 0;
                 for (let pos of toErase) { sumX += pos.x; sumY += pos.y; board[pos.y][pos.x].isPopping = true; }
                 centerPupils(toErase.map(({ x, y }) => board[y][x].id));
-                render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(800);
+                render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(700);
                 if (sessionId !== gameSessionId) return;
 
-                for (let pos of toErase) { if (board[pos.y][pos.x]) { let id = board[pos.y][pos.x].id; let el = document.getElementById('puyo-' + id); if (el) el.remove(); board[pos.y][pos.x] = null; } }
+                for (let pos of toErase) {
+                    if (board[pos.y][pos.x]) {
+                        let id = board[pos.y][pos.x].id;
+                        let el = document.getElementById('puyo-' + id);
+                        if (el) {
+                            const fragments = el.querySelector('.puyo-burst-fragments');
+                            if (fragments) {
+                                fragments.style.inset = 'auto';
+                                fragments.style.left = el.style.left;
+                                fragments.style.top = el.style.top;
+                                fragments.style.width = 'var(--cell-size)';
+                                fragments.style.height = 'var(--cell-size)';
+                                fragments.style.zIndex = '11';
+                                document.getElementById('puyoLayer').appendChild(fragments);
+                                Promise.allSettled(Array.from(fragments.querySelectorAll('.puyo-burst-fragment'))
+                                    .flatMap(fragment => fragment.getAnimations().map(animation => animation.finished)))
+                                    .then(() => fragments.remove());
+                            }
+                            el.remove();
+                        }
+                        board[pos.y][pos.x] = null;
+                    }
+                }
                 updateStatsUI();
                 render(); movedIds = await applyGravity();
                 if (sessionId !== gameSessionId) return;
@@ -1109,6 +1138,33 @@
             layer.appendChild(popup); sleep(1000).then(() => { if (popup.parentNode) popup.remove(); });
         }
 
+        function animatePuyoBurst(fragment, direction) {
+            const randomBetween = (min, max) => min + Math.random() * (max - min);
+            const endX = direction * randomBetween(400, 430), endY = randomBetween(60, 100);
+            const arcHeight = randomBetween(355, 370);
+            const rotation = direction * randomBetween(70, 150);
+            const endScale = randomBetween(0.08, 0.2), shrinkExponent = randomBetween(1.1, 2.4);
+            const keyframes = Array.from({ length: 61 }, (_, index) => {
+                const progress = index / 60;
+                const x = endX * progress;
+                const y = endY * progress - 4 * arcHeight * progress * (1 - progress);
+                const scale = 1 - (1 - endScale) * Math.pow(progress, shrinkExponent);
+                const opacity = progress < 0.88 ? 1 : 1 - (progress - 0.88) / 0.12;
+                return {
+                    transform: `translate(calc(-50% + ${x}%), calc(-50% + ${y}%)) scale(${scale}) rotate(${rotation * progress}deg)`,
+                    opacity
+                };
+            });
+
+            const easeIn = randomBetween(0.08, 0.16), easeOut = randomBetween(0.6, 0.85);
+            fragment.animate(keyframes, {
+                delay: 445,
+                duration: randomBetween(950, 1250),
+                easing: `cubic-bezier(${easeIn}, 0.8, ${easeOut}, 1)`,
+                fill: 'forwards'
+            });
+        }
+
         function updateStatsUI(scoreDisplay = currentScore) { document.getElementById('currScoreDisp').innerText = String(scoreDisplay); document.getElementById('maxScoreDisp').innerText = maxScore; document.getElementById('totalPoppedDisp').innerText = totalPoppedCount; document.getElementById('maxAllClearDisp').innerText = maxAllClearCount; document.getElementById('maxChainDisp').innerText = maxChainCount; }
 
         function render(isFalling = false) {
@@ -1136,7 +1192,24 @@
                             el.setAttribute('data-pupils', pupilState);
                         }
                         el.className = 'puyo-item' + (isFalling ? ' falling' : ''); el.style.left = `calc(var(--cell-size) * ${x})`; el.style.top = `calc(var(--cell-size) * ${y})`; el.style.transform = 'none';
-                        if (item.isPopping) el.classList.add('puyo-pop');
+                        if (item.isPopping) {
+                            el.classList.add('puyo-pop');
+                            if (!el.querySelector('.puyo-burst-fragments')) {
+                                const fragments = document.createElement('div');
+                                fragments.className = 'puyo-burst-fragments';
+                                fragments.setAttribute('aria-hidden', 'true');
+                                ['left', 'right'].forEach(side => {
+                                    const fragment = document.createElement('div');
+                                    fragment.className = `puyo-burst-fragment puyo-burst-fragment--${side}`;
+                                    fragment.innerHTML = createPuyoSVG(item.color, true);
+                                    fragments.appendChild(fragment);
+                                    animatePuyoBurst(fragment, side === 'left' ? -1 : 1);
+                                });
+                                el.appendChild(fragments);
+                            }
+                        } else {
+                            el.querySelector('.puyo-burst-fragments')?.remove();
+                        }
                         if (item.isLanding) el.classList.add('puyo-landing'); else el.classList.remove('puyo-landing');
                     }
                 }
@@ -1179,7 +1252,7 @@
                 aSub.style.transform = `rotate(${activePiece.angle}deg) translateY(-100%) rotate(${-activePiece.angle}deg)`;
             }
 
-            Array.from(layer.children).forEach(el => { if (!el.classList.contains('chain-num-popup') && !el.classList.contains('all-clear-popup') && !currentIds.has(el.id)) el.remove(); });
+            Array.from(layer.children).forEach(el => { if (!el.classList.contains('chain-num-popup') && !el.classList.contains('all-clear-popup') && !el.classList.contains('puyo-burst-fragments') && !currentIds.has(el.id)) el.remove(); });
             if (puyoQueue.length >= 2) {
                 const updateNext = (id, color, conn) => { let el = document.getElementById(id); let stateStr = `${color}_${conn.t}${conn.r}${conn.b}${conn.l}`; if (el.getAttribute('data-state') !== stateStr) { el.innerHTML = createPuyoSVG(color, false, conn); el.setAttribute('data-state', stateStr); } };
                 updateNext('next1Main', puyoQueue[0].main, {t:0,r:0,b:0,l:0}); updateNext('next1Sub', puyoQueue[0].sub, {t:0,r:0,b:0,l:0});
