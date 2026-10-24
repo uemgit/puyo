@@ -176,16 +176,17 @@
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center center;
         }
         .puyo-item.puyo-pop { z-index: 20; }
-        .puyo-pop > .puyo-inner { animation: puyoPopBody 0.5s ease-in forwards; }
+        .puyo-pop > .puyo-inner {
+            animation: puyoPopBody 0.5s ease-in forwards, puyoPopVanish 1ms linear calc(445ms + var(--burst-delay, 0ms)) forwards;
+        }
         #puyoBurstLayer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 15; }
         .puyo-burst-fragments { position: absolute; pointer-events: none; }
         .puyo-burst-fragment { position: absolute; top: 42%; left: 50%; width: 48%; height: 48%; opacity: 0; will-change: transform, opacity; }
         @keyframes puyoPopBody {
-            0% { transform: scale(1); opacity: 1; }
-            14% { transform: scale(1.2); opacity: 1; }
-            99.9% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1.2); opacity: 0; }
+            0% { transform: scale(1); }
+            14%, 100% { transform: scale(1.2); }
         }
+        @keyframes puyoPopVanish { to { opacity: 0; } }
         .puyo-item.puyo-landing:not(.active-puyo) { transition: none !important; }
         .puyo-landing .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
         @keyframes jellyLandingAnim {
@@ -545,15 +546,9 @@
             } catch (e) { return false; }
         }
 
-        function createPuyoSVG(colorIndex, isGhost = false, conn = {t:0, r:0, b:0, l:0}, pupilOffsets = null, isBurst = false) {
-            if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
+        function createPuyoConnectionMarkup(colorIndex, conn) {
             const theme = MASTER_PUYO_THEMES[colorIndex];
-            const pupils = pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }];
-            const centeredEyesHTML = `<circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" />`;
-            const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
-            const baseShapePath = isBurst
-                ? "M 22.5 2 A 20.5 20.5 0 1 1 22.5 43 A 20.5 20.5 0 1 1 22.5 2 Z"
-                : "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
+            if (!theme) return '';
             const seamOverlap = 1.2;
             let connFill = "", connOutline = "";
             if (conn.r) connFill += `<rect x="20" y="14" width="${25 + seamOverlap}" height="24" fill="${theme.base}" />`;
@@ -564,7 +559,20 @@
             if (conn.l) connOutline += `<path d="M ${-seamOverlap} 13.123 H 7.5 M ${-seamOverlap} 37.87 H 7.5" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
             if (conn.b) connOutline += `<path d="M 7.5 37.87 V ${45 + seamOverlap} M 37.5 37.87 V ${45 + seamOverlap}" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
             if (conn.t) connOutline += `<path d="M 7.5 ${-seamOverlap} V 13.123 M 37.5 ${-seamOverlap} V 13.123" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
-            return `<div class="puyo-inner"><svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;"><path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="2.5" stroke-linejoin="round" />${connFill}${connOutline}${highlightHTML}${isGhost ? '' : centeredEyesHTML}<path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" /></svg></div>`;
+            return `${connFill}${connOutline}`;
+        }
+
+        function createPuyoSVG(colorIndex, isGhost = false, conn = {t:0, r:0, b:0, l:0}, pupilOffsets = null, isBurst = false) {
+            if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
+            const theme = MASTER_PUYO_THEMES[colorIndex];
+            const pupils = pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+            const centeredEyesHTML = `<circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" />`;
+            const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
+            const baseShapePath = isBurst
+                ? "M 22.5 2 A 20.5 20.5 0 1 1 22.5 43 A 20.5 20.5 0 1 1 22.5 2 Z"
+                : "M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z";
+            const connectionHTML = createPuyoConnectionMarkup(colorIndex, conn);
+            return `<div class="puyo-inner"><svg viewBox="0 0 45 45" style="width:100%; height:100%; display:block; overflow:visible;"><path d="${baseShapePath}" fill="${theme.base}" stroke="${theme.stroke}" stroke-width="2.5" stroke-linejoin="round" /><g class="puyo-connection">${connectionHTML}</g>${highlightHTML}${isGhost ? '' : centeredEyesHTML}<path d="${baseShapePath}" fill="none" stroke="#ffffff" class="axis-glow" transform="scale(1.05) translate(-1.1, -1.1)" /></svg></div>`;
         }
 
         function initGrid() { const gridBg = document.getElementById('gridBg'); gridBg.innerHTML = ''; for (let i = 0; i < ROWS * COLS; i++) { const cell = document.createElement('div'); cell.className = 'grid-cell'; gridBg.appendChild(cell); } }
@@ -1063,7 +1071,7 @@
                             let curr = queue.shift(); group.push(curr);
                             [[0,1], [0,-1], [1,0], [-1,0]].forEach(([dx, dy]) => { let nx = curr.x + dx, ny = curr.y + dy; if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) { if (!visited[ny][nx] && board[ny][nx] && board[ny][nx].color === cell.color) { visited[ny][nx] = true; queue.push({ x: nx, y: ny }); } } });
                         }
-                        if (group.length >= 4) { toErase = toErase.concat(group); eraseGroups.push({ color: cell.color, count: group.length }); }
+                        if (group.length >= 4) { toErase = toErase.concat(group); eraseGroups.push({ color: cell.color, count: group.length, positions: group }); }
                     }
                 }
             } return { toErase, eraseGroups };
@@ -1093,9 +1101,23 @@
                 updateStatsUI(`${scoreBase} x ${totalBonus}`);
 
                 let sumX = 0, sumY = 0;
+                let maxBurstDelay = 0;
+                for (const group of eraseGroups) {
+                    const burstOrder = [...group.positions];
+                    for (let i = burstOrder.length - 1; i > 0; i--) {
+                        const randomIndex = Math.floor(Math.random() * (i + 1));
+                        [burstOrder[i], burstOrder[randomIndex]] = [burstOrder[randomIndex], burstOrder[i]];
+                    }
+                    burstOrder.forEach(({ x, y }, index) => {
+                        const burstDelay = Math.min(index, 3) * 100;
+                        board[y][x].burstDelay = burstDelay;
+                        board[y][x].burstFinished = false;
+                        maxBurstDelay = Math.max(maxBurstDelay, burstDelay);
+                    });
+                }
                 for (let pos of toErase) { sumX += pos.x; sumY += pos.y; board[pos.y][pos.x].isPopping = true; }
                 centerPupils(toErase.map(({ x, y }) => board[y][x].id));
-                render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(700);
+                render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(Math.max(700, 445 + maxBurstDelay + 10));
                 if (sessionId !== gameSessionId) return;
 
                 for (let pos of toErase) {
@@ -1140,7 +1162,7 @@
             layer.appendChild(popup); sleep(1000).then(() => { if (popup.parentNode) popup.remove(); });
         }
 
-        function animatePuyoBurst(fragment, direction) {
+        function animatePuyoBurst(fragment, direction, delayOffset = 0) {
             const randomBetween = (min, max) => min + Math.random() * (max - min);
             const endX = direction * randomBetween(150, 520), endY = randomBetween(-180, 220);
             const sideSway = randomBetween(-150, 150), arcHeight = randomBetween(260, 480);
@@ -1161,11 +1183,26 @@
 
             const easeIn = randomBetween(0.04, 0.3), easeOut = randomBetween(0.55, 0.95);
             fragment.animate(keyframes, {
-                delay: 445,
+                delay: 445 + delayOffset,
                 duration: randomBetween(800, 1450),
                 easing: `cubic-bezier(${easeIn}, ${randomBetween(0.55, 0.95)}, ${easeOut}, 1)`,
                 fill: 'forwards'
             });
+        }
+
+        async function finishPuyoBurstAfterDelay(puyoId, delay, sessionId) {
+            await sleep(delay + 1);
+            if (sessionId !== gameSessionId) return;
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    const cell = board[y][x];
+                    if (cell?.id === puyoId && cell.isPopping) {
+                        cell.burstFinished = true;
+                        render();
+                        return;
+                    }
+                }
+            }
         }
 
         function updateStatsUI(scoreDisplay = currentScore) { document.getElementById('currScoreDisp').innerText = String(scoreDisplay); document.getElementById('maxScoreDisp').innerText = maxScore; document.getElementById('totalPoppedDisp').innerText = totalPoppedCount; document.getElementById('maxAllClearDisp').innerText = maxAllClearCount; document.getElementById('maxChainDisp').innerText = maxChainCount; }
@@ -1181,20 +1218,39 @@
                         const item = board[y][x], domId = 'puyo-' + item.id; currentIds.add(domId);
                         let conn = { t:0, r:0, b:0, l:0 };
                         if (!unconnectedIds.has(item.id)) {
-                            if (y > 0 && board[y-1][x] && board[y-1][x].color === item.color && !unconnectedIds.has(board[y-1][x].id)) conn.t = 1;
-                            if (y < ROWS-1 && board[y+1][x] && board[y+1][x].color === item.color && !unconnectedIds.has(board[y+1][x].id)) conn.b = 1;
-                            if (x > 0 && board[y][x-1] && board[y][x-1].color === item.color && !unconnectedIds.has(board[y][x-1].id)) conn.l = 1;
-                            if (x < COLS-1 && board[y][x+1] && board[y][x+1].color === item.color && !unconnectedIds.has(board[y][x+1].id)) conn.r = 1;
+                            if (y > 0 && board[y-1][x] && board[y-1][x].color === item.color && !(board[y-1][x].isPopping && board[y-1][x].burstFinished) && !unconnectedIds.has(board[y-1][x].id)) conn.t = 1;
+                            if (y < ROWS-1 && board[y+1][x] && board[y+1][x].color === item.color && !(board[y+1][x].isPopping && board[y+1][x].burstFinished) && !unconnectedIds.has(board[y+1][x].id)) conn.b = 1;
+                            if (x > 0 && board[y][x-1] && board[y][x-1].color === item.color && !(board[y][x-1].isPopping && board[y][x-1].burstFinished) && !unconnectedIds.has(board[y][x-1].id)) conn.l = 1;
+                            if (x < COLS-1 && board[y][x+1] && board[y][x+1].color === item.color && !(board[y][x+1].isPopping && board[y][x+1].burstFinished) && !unconnectedIds.has(board[y][x+1].id)) conn.r = 1;
                         }
                         let connStr = `${conn.t}${conn.r}${conn.b}${conn.l}`;
                         let el = document.getElementById(domId); if (!el) { el = document.createElement('div'); el.id = domId; el.className = 'puyo-item'; layer.appendChild(el); }
                         const pupilState = JSON.stringify(item.pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }]);
-                        if (el.getAttribute('data-conn') !== connStr || el.getAttribute('data-pupils') !== pupilState) {
+                        if (!el.hasAttribute('data-conn')) {
+                            el.innerHTML = createPuyoSVG(item.color, false, conn, item.pupilOffsets);
+                            el.setAttribute('data-conn', connStr);
+                            el.setAttribute('data-pupils', pupilState);
+                        } else if (item.isPopping) {
+                            if (el.getAttribute('data-conn') !== connStr) {
+                                const connection = el.querySelector('.puyo-connection');
+                                if (connection) connection.innerHTML = createPuyoConnectionMarkup(item.color, conn);
+                                el.setAttribute('data-conn', connStr);
+                            }
+                            if (el.getAttribute('data-pupils') !== pupilState) {
+                                const pupils = item.pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+                                el.querySelectorAll('circle[fill="#0f172a"]').forEach((pupil, index) => {
+                                    pupil.setAttribute('transform', `translate(${pupils[index]?.x || 0} ${pupils[index]?.y || 0})`);
+                                });
+                                el.setAttribute('data-pupils', pupilState);
+                            }
+                        } else if (el.getAttribute('data-conn') !== connStr || el.getAttribute('data-pupils') !== pupilState) {
                             el.innerHTML = createPuyoSVG(item.color, false, conn, item.pupilOffsets);
                             el.setAttribute('data-conn', connStr);
                             el.setAttribute('data-pupils', pupilState);
                         }
                         el.className = 'puyo-item' + (isFalling ? ' falling' : ''); el.style.left = `calc(var(--cell-size) * ${x})`; el.style.top = `calc(var(--cell-size) * ${y})`; el.style.transform = 'none';
+                        if (item.isPopping) el.style.setProperty('--burst-delay', `${item.burstDelay || 0}ms`);
+                        else el.style.removeProperty('--burst-delay');
                         if (item.isPopping) {
                             el.classList.add('puyo-pop');
                             const burstId = `puyo-burst-${item.id}`;
@@ -1214,10 +1270,11 @@
                                     fragment.className = 'puyo-burst-fragment';
                                     fragment.innerHTML = createPuyoSVG(item.color, true, undefined, undefined, true);
                                     fragments.appendChild(fragment);
-                                    animatePuyoBurst(fragment, direction);
+                                    animatePuyoBurst(fragment, direction, item.burstDelay);
                                 });
                                 const burstLayer = document.getElementById('puyoBurstLayer');
                                 burstLayer.appendChild(fragments);
+                                finishPuyoBurstAfterDelay(item.id, 445 + (item.burstDelay || 0), gameSessionId);
                                 Promise.allSettled(Array.from(fragments.querySelectorAll('.puyo-burst-fragment'))
                                     .flatMap(fragment => fragment.getAnimations().map(animation => animation.finished)))
                                     .then(() => fragments.remove());
