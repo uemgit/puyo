@@ -167,10 +167,11 @@
             z-index: 10;
         }
         
-        .puyo-item.active-puyo { transition: left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .puyo-item.falling { transition: top var(--fall-duration, 0.12s) cubic-bezier(0.25, 0.1, 0.25, 1), left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) !important; }
+        .puyo-item.active-puyo { filter: drop-shadow(7.5px 7.5px 2.25px rgba(0, 0, 0, 0.3375)); transition: left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), filter 2s ease-out; }
+        .puyo-item.active-puyo.puyo-landed { filter: none; }
+        .puyo-item.falling { transition: top var(--fall-duration, 0.12s) cubic-bezier(0.25, 0.1, 0.25, 1), left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), filter 2s ease-out !important; }
         .puyo-item.ghost { opacity: 0.35; filter: saturate(0.6); z-index: 5; }
-        .puyo-item.active-sub-puyo { z-index: 12; transition: left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .puyo-item.active-sub-puyo { z-index: 12; transition: left 0.08s ease-out, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), filter 2s ease-out; }
 
         .puyo-inner {
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center center;
@@ -1316,8 +1317,9 @@
                 const axisClass = activePiece.isLanded ? '' : ' axis-puyo';
                 const activeClass = ' active-puyo';
                 const landingClass = activePiece.isLanding ? ' puyo-landing' : '';
-                aMain.className = 'puyo-item' + axisClass + activeClass + landingClass + (isFalling ? ' falling' : ''); 
-                aSub.className = 'puyo-item active-sub-puyo' + activeClass + landingClass + (isFalling ? ' falling' : '');
+                const landedClass = activePiece.isLanded && !activePiece.isLanding ? ' puyo-landed' : '';
+                aMain.className = 'puyo-item' + axisClass + activeClass + landingClass + landedClass + (isFalling ? ' falling' : ''); 
+                aSub.className = 'puyo-item active-sub-puyo' + activeClass + landingClass + landedClass + (isFalling ? ' falling' : '');
                 
                 aMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aMain.style.top = `calc(var(--cell-size) * ${activePiece.y + fp})`; aMain.style.transform = 'none';
                 aSub.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aSub.style.top = `calc(var(--cell-size) * ${activePiece.y + fp})`; 
