@@ -647,16 +647,15 @@
                 next2Pair.dataset.queueState !== `${puyoQueue[1].main}_${puyoQueue[1].sub}`) return;
 
             const panel = document.getElementById('queuePreview');
-            const container = panel.parentElement;
             const nextWindow = document.getElementById('next1Window');
             const width = nextWindow.getBoundingClientRect().width;
             const layer = document.createElement('div');
             layer.className = 'queue-transition-layer';
             panel.classList.add('queue-advancing');
-            container.appendChild(layer);
+            panel.appendChild(layer);
 
-            const outgoing = createQueueTransitionPair(nextPair, container, layer, width);
-            const movingNext2 = createQueueTransitionPair(next2Pair, container, layer, width);
+            const outgoing = createQueueTransitionPair(nextPair, panel, layer, width);
+            const movingNext2 = createQueueTransitionPair(next2Pair, panel, layer, width);
             const targetRect = nextWindow.getBoundingClientRect();
             const targetY = targetRect.top - next2Pair.getBoundingClientRect().top;
             const targetX = targetRect.left + targetRect.width / 2 - movingNext2.centerX;
