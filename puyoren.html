@@ -118,7 +118,6 @@
             margin-bottom: 6px;
         }
 
-        .panel-box-next2 { margin-bottom: 14px; }
         .panel-lbl { font-size: 10px; font-weight: 800; color: #4a270f; letter-spacing: -0.2px; margin-bottom: 2px; white-space: nowrap; }
         .stat-val { font-size: clamp(16px, 2.6vh, 22px); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
         .curr-val { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 6px rgba(74, 39, 15, 0.8); }
@@ -216,9 +215,19 @@
         }
         @keyframes popAllClear { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
 
-        .preview-box { background: var(--field-bg); border-radius: 6px; padding: 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; }
-        .puyo-preview-cell-next { width: calc(var(--cell-size) * 0.78); height: calc(var(--cell-size) * 0.78); }
-        .puyo-preview-cell-next2 { width: calc(var(--cell-size) * 0.62); height: calc(var(--cell-size) * 0.62); }
+        .queue-preview-panel { position: relative; gap: 3px; overflow: hidden; background: var(--field-bg); backdrop-filter: none; }
+        .queue-preview-slot { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .queue-pair-window { width: 100%; overflow: hidden; }
+        .queue-pair-window-next2 { width: 50%; align-self: flex-end; transform: translateX(6px); }
+        .queue-pair { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; }
+        .queue-pair-window-next2 .queue-pair { width: 200%; transform: translateX(calc(-50% + 23px)); }
+        .queue-puyo-cell { width: calc(var(--cell-size) * 0.78); height: calc(var(--cell-size) * 0.78); flex: 0 0 auto; }
+        .queue-puyo-jelly .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
+        .queue-advancing .queue-pair-window { visibility: hidden; }
+        .right-top { position: relative; }
+        .queue-transition-layer { position: absolute; inset: 0; z-index: 4; overflow: visible; pointer-events: none; }
+        .queue-transition-pair { position: absolute; display: flex; justify-content: center; overflow: hidden; will-change: transform, opacity, clip-path; }
+        .queue-transition-pair .queue-pair { width: 100% !important; }
 
         .tap-guide-overlay { position: absolute; inset: 0; display: flex; pointer-events: none; z-index: 2; opacity: 0.1; }
         .tap-zone-left { width: 50%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.3); }
@@ -332,8 +341,18 @@
 
             <div class="right-panel">
                 <div class="right-top">
-                    <div class="panel-box"><span class="panel-lbl">NEXT</span><div class="preview-box"><div id="next1Sub" class="puyo-preview-cell-next"></div><div id="next1Main" class="puyo-preview-cell-next"></div></div></div>
-                    <div class="panel-box panel-box-next2" style="opacity: 0.9;"><span class="panel-lbl">NEXT2</span><div class="preview-box"><div id="next2Sub" class="puyo-preview-cell-next2"></div><div id="next2Main" class="puyo-preview-cell-next2"></div></div></div>
+                    <div id="queuePreview" class="panel-box queue-preview-panel">
+                        <div class="queue-preview-slot">
+                            <div id="next1Window" class="queue-pair-window">
+                                <div id="next1Pair" class="queue-pair"><div id="next1Sub" class="queue-puyo-cell"></div><div id="next1Main" class="queue-puyo-cell"></div></div>
+                            </div>
+                        </div>
+                        <div class="queue-preview-slot">
+                            <div id="next2Window" class="queue-pair-window queue-pair-window-next2">
+                                <div id="next2Pair" class="queue-pair"><div id="next2Sub" class="queue-puyo-cell"></div><div id="next2Main" class="queue-puyo-cell"></div></div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="panel-box"><span class="panel-lbl">ぷよ消し数</span><span id="totalPoppedDisp" class="stat-val curr-val">0</span></div>
                     <div class="panel-box"><span class="panel-lbl">全消し数</span><span id="maxAllClearDisp" class="stat-val ac-val">0</span></div>
                     <div class="panel-box"><span class="panel-lbl">最大連鎖</span><span id="maxChainDisp" class="stat-val max-chain-val">0</span></div>
@@ -409,6 +428,9 @@
         let scoreResetHoldFrame = null;
         let modalTitlePuyoTimer = null;
         let modalTitlePuyoRightTimer = null;
+        let pendingQueueAdvance = null;
+        let queueAdvanceCleanupTimer = null;
+        const queuePuyoJellyTimers = new Map();
 
         function sleep(ms) {
             return new Promise(resolve => {
@@ -586,6 +608,108 @@
         function generatePiece() { return { main: activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)], sub: activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)] }; }
         function refillQueue() { while (puyoQueue.length < 3) puyoQueue.push(generatePiece()); }
 
+        function clearQueueAdvanceAnimation() {
+            if (queueAdvanceCleanupTimer !== null) clearTimeout(queueAdvanceCleanupTimer);
+            queueAdvanceCleanupTimer = null;
+            if (!pendingQueueAdvance) return;
+            pendingQueueAdvance.animations.forEach(animation => animation.cancel());
+            pendingQueueAdvance.layer.remove();
+            pendingQueueAdvance.panel.classList.remove('queue-advancing');
+            pendingQueueAdvance = null;
+        }
+
+        function createQueueTransitionPair(sourcePair, container, layer, width) {
+            const containerRect = container.getBoundingClientRect();
+            const sourceCellRect = sourcePair.querySelector('.queue-puyo-cell').getBoundingClientRect();
+            const wrapper = document.createElement('div');
+            wrapper.className = 'queue-transition-pair';
+            wrapper.style.left = `${sourceCellRect.left + sourceCellRect.width / 2 - containerRect.left - width / 2}px`;
+            wrapper.style.top = `${sourcePair.getBoundingClientRect().top - containerRect.top}px`;
+            wrapper.style.width = `${width}px`;
+            wrapper.style.height = `${sourcePair.getBoundingClientRect().height}px`;
+            const pair = sourcePair.cloneNode(true);
+            pair.removeAttribute('id');
+            pair.style.width = '100%';
+            pair.style.transform = 'none';
+            pair.querySelectorAll('[id]').forEach(element => element.removeAttribute('id'));
+            pair.querySelectorAll('.queue-puyo-jelly').forEach(element => element.classList.remove('queue-puyo-jelly'));
+            wrapper.appendChild(pair);
+            layer.appendChild(wrapper);
+            return { wrapper, centerX: sourceCellRect.left + sourceCellRect.width / 2 };
+        }
+
+        function beginQueueAdvance() {
+            clearQueueAdvanceAnimation();
+            if (puyoQueue.length < 2) return;
+            const nextPair = document.getElementById('next1Pair');
+            const next2Pair = document.getElementById('next2Pair');
+            if (nextPair.dataset.queueState !== `${puyoQueue[0].main}_${puyoQueue[0].sub}` ||
+                next2Pair.dataset.queueState !== `${puyoQueue[1].main}_${puyoQueue[1].sub}`) return;
+
+            const panel = document.getElementById('queuePreview');
+            const container = panel.parentElement;
+            const nextWindow = document.getElementById('next1Window');
+            const width = nextWindow.getBoundingClientRect().width;
+            const layer = document.createElement('div');
+            layer.className = 'queue-transition-layer';
+            panel.classList.add('queue-advancing');
+            container.appendChild(layer);
+
+            const outgoing = createQueueTransitionPair(nextPair, container, layer, width);
+            const movingNext2 = createQueueTransitionPair(next2Pair, container, layer, width);
+            const targetRect = nextWindow.getBoundingClientRect();
+            const targetY = targetRect.top - next2Pair.getBoundingClientRect().top;
+            const targetX = targetRect.left + targetRect.width / 2 - movingNext2.centerX;
+            const duration = 320;
+            const animations = [
+                outgoing.wrapper.animate([
+                    { transform: 'translateY(0)', opacity: 1 },
+                    { transform: `translateY(-${outgoing.wrapper.getBoundingClientRect().height + 8}px)`, opacity: 0 }
+                ], { duration, easing: 'ease-in', fill: 'forwards' }),
+                movingNext2.wrapper.animate([
+                    { transform: 'translate(0, 0)' },
+                    { transform: `translate(${targetX}px, ${targetY}px)` }
+                ], { duration, easing: 'ease-in-out', fill: 'forwards' })
+            ];
+            pendingQueueAdvance = { panel, layer, animations, completed: false };
+        }
+
+        function completeQueueAdvance() {
+            const transition = pendingQueueAdvance;
+            if (!transition || transition.completed) return;
+            transition.completed = true;
+            const next2Pair = document.getElementById('next2Pair');
+            const width = document.getElementById('next1Window').getBoundingClientRect().width;
+            const entering = createQueueTransitionPair(next2Pair, transition.layer.parentElement, transition.layer, width);
+            transition.animations.push(entering.wrapper.animate([
+                { transform: `translateX(${width / 2}px)`, clipPath: 'inset(0 50% 0 0)' },
+                { transform: 'translateX(0)', clipPath: 'inset(0 50% 0 0)' }
+            ], { duration: 320, easing: 'ease-out', fill: 'forwards' }));
+            queueAdvanceCleanupTimer = setTimeout(() => clearQueueAdvanceAnimation(), 360);
+        }
+
+        function scheduleQueuePuyoJelly(id) {
+            const puyo = document.getElementById(id);
+            if (!puyo) return;
+            const timer = setTimeout(() => {
+                puyo.classList.remove('queue-puyo-jelly');
+                void puyo.offsetWidth;
+                puyo.classList.add('queue-puyo-jelly');
+                const settleTimer = setTimeout(() => {
+                    puyo.classList.remove('queue-puyo-jelly');
+                    scheduleQueuePuyoJelly(id);
+                }, 300);
+                queuePuyoJellyTimers.set(id, settleTimer);
+            }, 1000 + Math.random() * 2000);
+            queuePuyoJellyTimers.set(id, timer);
+        }
+
+        function startQueuePuyoJellyAnimations() {
+            ['next1Sub', 'next1Main', 'next2Sub', 'next2Main'].forEach(id => {
+                if (!queuePuyoJellyTimers.has(id)) scheduleQueuePuyoJelly(id);
+            });
+        }
+
         function pauseGame() {
             if (isPaused) {
                 stopGravity();
@@ -691,6 +815,7 @@
 
         function startGame() {
             gameSessionId++;
+            clearQueueAdvanceAnimation();
             pickColorPalette(); initBoard(); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects();
             puyoQueue = []; historyStack = []; unconnectedIds.clear(); isGameOver = false; isAnimating = false; isDropping = false; lastRotateFailedState = null;
             currentAllClearCount = 0; totalPoppedCount = 0; currentScore = 0;
@@ -746,7 +871,11 @@
         }
 
         function spawnPiece() {
-            refillQueue(); const next = puyoQueue.shift(); refillQueue(); lastRotateFailedState = null;
+            refillQueue();
+            beginQueueAdvance();
+            const next = puyoQueue.shift();
+            refillQueue();
+            lastRotateFailedState = null;
             activePiece = { x: 2, y: 1, rot: 0, angle: 0, fallProgress: 0, isLanded: false, isLanding: false, landedAt: null, landingAnimationToken: 0, main: { color: next.main, id: nextPuyoId++ }, sub: { color: next.sub, id: nextPuyoId++ } };
             if (board[activePiece.y][activePiece.x] !== null) { isGameOver = true; activePiece = null; document.getElementById('gameOverMask').classList.remove('hidden'); } else { startGravity(); }
             saveResumeData();
@@ -1332,9 +1461,16 @@
             Array.from(layer.children).forEach(el => { if (!el.classList.contains('chain-num-popup') && !el.classList.contains('all-clear-popup') && !el.classList.contains('puyo-burst-fragments') && !currentIds.has(el.id)) el.remove(); });
             if (puyoQueue.length >= 2) {
                 const updateNext = (id, color, conn) => { let el = document.getElementById(id); let stateStr = `${color}_${conn.t}${conn.r}${conn.b}${conn.l}`; if (el.getAttribute('data-state') !== stateStr) { el.innerHTML = createPuyoSVG(color, false, conn); el.setAttribute('data-state', stateStr); } };
-                updateNext('next1Main', puyoQueue[0].main, {t:0,r:0,b:0,l:0}); updateNext('next1Sub', puyoQueue[0].sub, {t:0,r:0,b:0,l:0});
-                updateNext('next2Main', puyoQueue[1].main, {t:0,r:0,b:0,l:0}); updateNext('next2Sub', puyoQueue[1].sub, {t:0,r:0,b:0,l:0});
+                const updatePair = (pairId, mainId, subId, piece) => {
+                    const pair = document.getElementById(pairId);
+                    pair.dataset.queueState = `${piece.main}_${piece.sub}`;
+                    updateNext(mainId, piece.main, {t:0,r:0,b:0,l:0});
+                    updateNext(subId, piece.sub, {t:0,r:0,b:0,l:0});
+                };
+                updatePair('next1Pair', 'next1Main', 'next1Sub', puyoQueue[0]);
+                updatePair('next2Pair', 'next2Main', 'next2Sub', puyoQueue[1]);
             }
+            completeQueueAdvance();
         }
 
         let touchStartX = 0, touchStartY = 0, touchLastX = 0, touchStartTime = 0, isGameGesture = false, hasSwiped = false;
@@ -1400,7 +1536,7 @@
             if (lowerKey === 'u' && document.activeElement.tagName !== 'INPUT') undo(); 
         });
 
-        window.onload = () => { if (!loadResumeData()) startGame(); else render(); openResetModal(); };
+        window.onload = () => { if (!loadResumeData()) startGame(); else render(); startQueuePuyoJellyAnimations(); openResetModal(); };
         window.addEventListener('blur', saveResumeData); window.addEventListener('beforeunload', saveResumeData);
     </script>
 </body>
