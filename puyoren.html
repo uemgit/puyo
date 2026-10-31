@@ -20,7 +20,7 @@
         :root {
             --bg-dark-1: #000000;
             --bg-dark-2: #050518;
-            --field-bg: #1f1f6a;
+            --field-bg: #00145a;
             --cell-size: min(calc((100vw - 136px) / 6), calc((100dvh - 90px) / 13.2), 60px);
         }
 
@@ -105,7 +105,7 @@
         }
 
         .panel-box {
-            background: rgba(0, 0, 0, 0.9);
+            background: #00145a;
             backdrop-filter: blur(10px);
             border: 2px solid #2121ff;
             border-radius: 6px;
@@ -117,7 +117,7 @@
             margin-bottom: 6px;
         }
 
-        .panel-lbl { font-size: 10px; font-weight: 800; color: #00ffff; letter-spacing: -0.2px; margin-bottom: 2px; white-space: nowrap; }
+        .panel-lbl { font-size: 10px; font-weight: 800; color: #00aaff; letter-spacing: -0.2px; margin-bottom: 2px; white-space: nowrap; }
         .score-box .panel-lbl { color: #ffff00; }
         .stat-val { font-size: clamp(16px, 2.6vh, 22px); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
         .curr-val { color: #ffffff; text-shadow: 0 0 6px rgba(255, 255, 255, 0.8); }
@@ -246,7 +246,7 @@
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card {
-            background: #000000; border: 3px solid #2121ff; border-radius: 16px; padding: 20px; width: min(90%, 380px);
+            background: #131341; border: 3px solid #2121ff; border-radius: 16px; padding: 20px; width: min(90%, 380px);
             box-shadow: 0 0 25px rgba(33, 33, 255, 0.8); display: flex; flex-direction: column; align-items: stretch; gap: 16px; transform: scale(0.9); transition: transform 0.2s;
         }
         .modal-card:focus { outline: none; }
@@ -287,8 +287,8 @@
         .score-reset-section { display: flex; align-items: center; justify-content: flex-end; gap: 8px; width: 100%; min-height: 36px; }
         .score-reset-btn {
             position: relative; overflow: hidden; isolation: isolate; flex: 0 0 auto; width: 112px; min-height: 30px; padding: 4px 8px;
-            border: 1px solid rgba(33, 33, 255, 0.6); border-radius: 7px; background: transparent; color: #00ffff;
-            font-size: 10px; font-weight: 600; cursor: pointer;
+            border: 1px solid rgba(33, 33, 255, 0.6); border-radius: 7px; background: transparent; color: #ffffff;
+            font-size: 12px; font-weight: 600; cursor: pointer;
             touch-action: none; user-select: none; -webkit-user-select: none;
         }
         .score-reset-btn:active { background: rgba(33, 33, 255, 0.2); }
