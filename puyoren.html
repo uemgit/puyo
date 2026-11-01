@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Puyo Chain Practice - 80s Arcade Edition</title>
+    <title>Puyo-Ren</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 45 45%22%3E%3Cpath d=%22M22.5 7C12 7 4 14 2.5 23 1 34 7 42 22.5 42S44 34 42.5 23 33 7 22.5 7Z%22 fill=%22%23ff1744%22 stroke=%22%23880015%22 stroke-width=%222.5%22 stroke-linejoin=%22round%22/%3E%3Cellipse cx=%2212%22 cy=%2214%22 rx=%226%22 ry=%223%22 fill=%22white%22 opacity=%22.6%22 transform=%22rotate(-25 12 14)%22/%3E%3Ccircle cx=%2215.5%22 cy=%2225%22 r=%226%22 fill=%22white%22 stroke=%22%23880015%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2229.5%22 cy=%2225%22 r=%226%22 fill=%22white%22 stroke=%22%23880015%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2215.5%22 cy=%2225%22 r=%222%22 fill=%22%230f172a%22/%3E%3Ccircle cx=%2229.5%22 cy=%2225%22 r=%222%22 fill=%22%230f172a%22/%3E%3C/svg%3E">
     <style>
         * {
@@ -149,9 +149,16 @@
 
         .grid-layer { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(13, 1fr); pointer-events: none; z-index: 0; }
         .grid-cell { position: relative; }
-        .grid-cell::before, .grid-cell::after { content: ""; position: absolute; background: rgba(33, 33, 255, 0.25); pointer-events: none; }
-        .grid-cell::before { top: 0; right: -1px; bottom: 0; width: 2px; }
-        .grid-cell::after { right: 0; bottom: -1px; left: 0; height: 2px; }
+        .grid-cell::before, .grid-cell::after {
+            content: ""; position: absolute; background: #001eb7;
+            box-shadow:
+                0 0 4px rgba(0, 30, 183, 0.8),
+                0 0 6px rgba(0, 30, 183, 0.6),
+                0 0 8px rgba(0, 30, 183, 0.4);
+            pointer-events: none;
+        }
+        .grid-cell::before { top: 0; right: 0; bottom: 0; width: 1px; }
+        .grid-cell::after { right: 0; bottom: 0; left: 0; height: 1px; }
         .grid-cell:nth-child(6n)::before { display: none; }
         .grid-cell:nth-last-child(-n+6)::after { display: none; }
 
@@ -246,7 +253,7 @@
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card {
-            background: #131341; border: 3px solid #2121ff; border-radius: 16px; padding: 20px; width: min(90%, 380px);
+            background: #000044; border: 3px solid #0000ff; border-radius: 16px; padding: 20px; width: min(90%, 380px);
             box-shadow: 0 0 25px rgba(33, 33, 255, 0.8); display: flex; flex-direction: column; align-items: stretch; gap: 16px; transform: scale(0.9); transition: transform 0.2s;
         }
         .modal-card:focus { outline: none; }
@@ -383,7 +390,7 @@
                 <div id="scoreResetStatus" class="score-reset-status" aria-live="polite"></div>
                 <button id="scoreResetBtn" class="score-reset-btn" type="button" aria-pressed="false" aria-label="スコアリセット。5秒間長押し">
                     <span class="score-reset-progress" aria-hidden="true"></span>
-                    <span class="score-reset-label">⚙スコアリセット</span>
+                    <span class="score-reset-label">⚙記録クリア</span>
                 </button>
             </section>
         </div>
@@ -1063,7 +1070,11 @@
         }
 
         function undo() {
-            if (isPaused || isAnimating || historyStack.length === 0) return;
+            if (isPaused || historyStack.length === 0) return;
+            gameSessionId++;
+            stopGravity();
+            isAnimating = false;
+            isDropping = false;
             const prev = historyStack.pop();
             board = prev.board.map(r => r.map(c => c ? { ...c } : null)); puyoQueue = prev.puyoQueue; activeColorPalette = [...prev.activeColorPalette]; currentColorCount = prev.currentColorCount || 4;
             maxChainCount = prev.maxChainCount; currentAllClearCount = prev.currentAllClearCount; maxAllClearCount = prev.maxAllClearCount; totalPoppedCount = prev.totalPoppedCount || 0; currentScore = prev.currentScore; maxScore = prev.maxScore;
@@ -1311,11 +1322,10 @@
                 };
             });
 
-            const easeIn = randomBetween(0.04, 0.3), easeOut = randomBetween(0.55, 0.95);
             fragment.animate(keyframes, {
                 delay: 500 + delayOffset,
-                duration: randomBetween(800, 1450),
-                easing: `cubic-bezier(${easeIn}, ${randomBetween(0.55, 0.95)}, ${easeOut}, 1)`,
+                duration: randomBetween(500, 600),
+                easing: 'linear',
                 fill: 'forwards'
             });
         }
