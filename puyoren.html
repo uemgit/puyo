@@ -186,18 +186,31 @@
         .puyo-inner {
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center center;
         }
-        .puyo-item.puyo-pop { z-index: 20; }
+        .puyo-item.puyo-pop { z-index: 20; animation: puyoPopFlicker 500ms linear 1 forwards; }
         .puyo-pop > .puyo-inner {
-            animation: puyoPopBody 0.8s ease-in forwards, puyoPopVanish 1ms linear calc(500ms + var(--burst-delay, 0ms)) forwards;
+            animation: puyoPopBody 1.0s ease-in forwards, puyoPopVanish 1ms linear calc(500ms + var(--burst-delay, 0ms)) forwards;
         }
+        .puyo-eyes { transform-box: fill-box; transform-origin: center; transition: transform 120ms ease-out; }
+        .puyo-item.puyo-surprised .puyo-eyes { transform: scale(1.15); }
         #puyoBurstLayer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 15; }
         .puyo-burst-fragments { position: absolute; pointer-events: none; }
         .puyo-burst-fragment { position: absolute; top: 42%; left: 50%; width: 48%; height: 48%; opacity: 0; will-change: transform, opacity; }
         @keyframes puyoPopBody {
             0% { transform: scale(1); }
-            20%, 100% { transform: scale(1.2); }
+            20%, 100% { transform: scale(1.12); }
         }
         @keyframes puyoPopVanish { to { opacity: 0; } }
+        @keyframes puyoPopFlicker {
+            0% { opacity: 1; animation-timing-function: steps(1, end); }
+            8.3% { opacity: 0; animation-timing-function: steps(1, end); }
+            16.6% { opacity: 1; animation-timing-function: steps(1, end); }
+            25% { opacity: 0; animation-timing-function: steps(1, end); }
+            33.3% { opacity: 1; animation-timing-function: steps(1, end); }
+            41.6% { opacity: 0; animation-timing-function: steps(1, end); }
+            50% { opacity: 1; animation-timing-function: steps(1, end); }
+            58.3% { opacity: 0; animation-timing-function: steps(1, end); }
+            66.7% { opacity: 1; }
+        }
         .puyo-item.puyo-landing:not(.active-puyo) { transition: none !important; }
         .puyo-landing .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
         @keyframes jellyLandingAnim {
@@ -599,7 +612,7 @@
             if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
             const theme = MASTER_PUYO_THEMES[colorIndex];
             const pupils = pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }];
-            const centeredEyesHTML = `<circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" />`;
+            const centeredEyesHTML = `<g class="puyo-eyes"><circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" /></g>`;
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
             const baseShapePath = isBurst
                 ? "M 22.5 2 A 20.5 20.5 0 1 1 22.5 43 A 20.5 20.5 0 1 1 22.5 2 Z"
@@ -1258,8 +1271,25 @@
                     });
                 }
                 for (let pos of toErase) { sumX += pos.x; sumY += pos.y; board[pos.y][pos.x].isPopping = true; }
-                centerPupils(toErase.map(({ x, y }) => board[y][x].id));
-                render(); showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(Math.max(700, 445 + maxBurstDelay + 10));
+                const firstPuyo = toErase.find(({ x, y }) => board[y][x].burstDelay === 0);
+                render();
+                if (firstPuyo) {
+                    const firstPuyoId = board[firstPuyo.y][firstPuyo.x].id;
+                    const firstPuyoInner = document.getElementById(`puyo-${firstPuyoId}`).querySelector('.puyo-inner');
+                    const onFirstPuyoVanish = event => {
+                        if (event.target !== firstPuyoInner || event.animationName !== 'puyoPopBody') return;
+                        firstPuyoInner.removeEventListener('animationstart', onFirstPuyoVanish);
+                        setTimeout(() => {
+                            if (sessionId !== gameSessionId) return;
+                            const poppingPuyoIds = toErase.map(({ x, y }) => board[y][x].id);
+                            centerPupils(poppingPuyoIds);
+                            for (const pos of toErase) board[pos.y][pos.x].isSurprised = true;
+                            render();
+                        }, 200);
+                    };
+                    firstPuyoInner.addEventListener('animationstart', onFirstPuyoVanish);
+                }
+                showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(Math.max(700, 445 + maxBurstDelay + 10));
                 if (sessionId !== gameSessionId) return;
 
                 for (let pos of toErase) {
@@ -1393,6 +1423,7 @@
                         else el.style.removeProperty('--burst-delay');
                         if (item.isPopping) {
                             el.classList.add('puyo-pop');
+                            if (item.isSurprised) el.classList.add('puyo-surprised');
                             const burstId = `puyo-burst-${item.id}`;
                             if (!document.getElementById(burstId)) {
                                 const bounds = el.getBoundingClientRect();
