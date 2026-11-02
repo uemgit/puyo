@@ -1295,7 +1295,7 @@
                     item.isPopping = true;
                     item.isSurprised = true;
                     item.burstFinished = true;
-                    item.burstDelay = index * PUYO_CLEAR_VANISH_INTERVAL_MS;
+                    item.burstDelay = Math.min(index, 3) * PUYO_CLEAR_VANISH_INTERVAL_MS;
                     maxBurstDelay = Math.max(maxBurstDelay, item.burstDelay);
                 });
                 centerPupils(toErase.map(({ x, y }) => board[y][x].id));
