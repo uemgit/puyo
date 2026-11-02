@@ -186,30 +186,32 @@
         .puyo-inner {
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center center;
         }
-        .puyo-item.puyo-pop { z-index: 20; animation: puyoPopFlicker 500ms linear 1 forwards; }
+        .puyo-item.puyo-flickering { z-index: 20; animation: puyoPopFlicker var(--puyo-flicker-duration, 500ms) 1 forwards; }
+        .puyo-item.puyo-pop { z-index: 20; }
         .puyo-pop > .puyo-inner {
-            animation: puyoPopBody 1.0s ease-in forwards, puyoPopVanish 1ms linear calc(500ms + var(--burst-delay, 0ms)) forwards;
+            animation: puyoPopBody var(--puyo-pop-expand-duration, 200ms) ease-out forwards, puyoPopVanish var(--puyo-pop-vanish-duration, 1ms) linear calc(var(--puyo-pop-expand-duration, 200ms) + var(--puyo-pop-hold-duration, 500ms) + var(--burst-delay, 0ms)) forwards;
         }
         .puyo-eyes { transform-box: fill-box; transform-origin: center; transition: transform 120ms ease-out; }
-        .puyo-item.puyo-surprised .puyo-eyes { transform: scale(1.15); }
+        .puyo-item.puyo-surprised .puyo-eyes { transform: scale(1.5); }
+        .puyo-item.puyo-surprised .puyo-pupil { r: 0.8px; }
         #puyoBurstLayer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 15; }
         .puyo-burst-fragments { position: absolute; pointer-events: none; }
         .puyo-burst-fragment { position: absolute; top: 42%; left: 50%; width: 48%; height: 48%; opacity: 0; will-change: transform, opacity; }
         @keyframes puyoPopBody {
             0% { transform: scale(1); }
-            20%, 100% { transform: scale(1.12); }
+            100% { transform: scale(1.15); }
         }
         @keyframes puyoPopVanish { to { opacity: 0; } }
         @keyframes puyoPopFlicker {
             0% { opacity: 0; animation-timing-function: steps(1, end); }
-            8.3% { opacity: 1; animation-timing-function: steps(1, end); }
-            16.6% { opacity: 0; animation-timing-function: steps(1, end); }
-            25% { opacity: 1; animation-timing-function: steps(1, end); }
-            33.3% { opacity: 0; animation-timing-function: steps(1, end); }
-            41.6% { opacity: 1; animation-timing-function: steps(1, end); }
+            12.5% { opacity: 1; animation-timing-function: steps(1, end); }
+            25% { opacity: 0; animation-timing-function: steps(1, end); }
+            37.5% { opacity: 1; animation-timing-function: steps(1, end); }
             50% { opacity: 0; animation-timing-function: steps(1, end); }
-            58.3% { opacity: 1; animation-timing-function: steps(1, end); }
-            66.7% { opacity: 1; }
+            62.5% { opacity: 1; animation-timing-function: steps(1, end); }
+            75% { opacity: 0; animation-timing-function: steps(1, end); }
+            87.5% { opacity: 1; animation-timing-function: steps(1, end); }
+            100% { opacity: 0; }
         }
         .puyo-item.puyo-landing:not(.active-puyo) { transition: none !important; }
         .puyo-landing .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
@@ -416,6 +418,11 @@
         const LOCK_DELAY_MS = 530;
         const SCORE_RESET_HOLD_MS = 5000;
         const DROP_STEP_DURATION_MS = 16;
+        const PUYO_CLEAR_FLICKER_DURATION_MS = 500;
+        const PUYO_CLEAR_EXPANSION_DURATION_MS = 100;
+        const PUYO_CLEAR_HOLD_DURATION_MS = 400;
+        const PUYO_CLEAR_VANISH_INTERVAL_MS = 100;
+        const PUYO_CLEAR_VANISH_DURATION_MS = 1;
         const GRAVITY_INTERVALS = [0, 1200, 530, 270, 110, 60];
 
         const MASTER_PUYO_THEMES = {
@@ -480,6 +487,17 @@
                 activeDelays.add(delay);
                 delay.start();
             });
+        }
+
+        async function waitForGameSession(ms, sessionId) {
+            let remaining = ms;
+            while (remaining > 0) {
+                if (sessionId !== gameSessionId) return false;
+                const interval = Math.min(50, remaining);
+                await sleep(interval);
+                remaining -= interval;
+            }
+            return sessionId === gameSessionId;
         }
 
         let activeColorPalette = [], board = [], puyoQueue = [], activePiece = null, historyStack = [];
@@ -612,7 +630,7 @@
             if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
             const theme = MASTER_PUYO_THEMES[colorIndex];
             const pupils = pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }];
-            const centeredEyesHTML = `<g class="puyo-eyes"><circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="15.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle cx="29.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" /></g>`;
+            const centeredEyesHTML = `<g class="puyo-eyes"><circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle class="puyo-pupil" cx="15.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle class="puyo-pupil" cx="29.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" /></g>`;
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
             const baseShapePath = isBurst
                 ? "M 22.5 2 A 20.5 20.5 0 1 1 22.5 43 A 20.5 20.5 0 1 1 22.5 2 Z"
@@ -1256,49 +1274,38 @@
                 updateStatsUI(`${scoreBase} x ${totalBonus}`);
 
                 let sumX = 0, sumY = 0;
-                let maxBurstDelay = 0;
-                for (const group of eraseGroups) {
-                    const burstOrder = [...group.positions];
-                    for (let i = burstOrder.length - 1; i > 0; i--) {
-                        const randomIndex = Math.floor(Math.random() * (i + 1));
-                        [burstOrder[i], burstOrder[randomIndex]] = [burstOrder[randomIndex], burstOrder[i]];
-                    }
-                    burstOrder.forEach(({ x, y }, index) => {
-                        const burstDelay = Math.min(index, 3) * 100;
-                        board[y][x].burstDelay = burstDelay;
-                        board[y][x].burstFinished = false;
-                        maxBurstDelay = Math.max(maxBurstDelay, burstDelay);
-                    });
+                for (const pos of toErase) {
+                    sumX += pos.x;
+                    sumY += pos.y;
+                    board[pos.y][pos.x].isFlickering = true;
                 }
-                for (let pos of toErase) { sumX += pos.x; sumY += pos.y; board[pos.y][pos.x].isPopping = true; }
-                const firstPuyo = toErase.find(({ x, y }) => board[y][x].burstDelay === 0);
                 render();
-                if (firstPuyo) {
-                    const firstPuyoId = board[firstPuyo.y][firstPuyo.x].id;
-                    const firstPuyoInner = document.getElementById(`puyo-${firstPuyoId}`).querySelector('.puyo-inner');
-                    const onFirstPuyoVanish = event => {
-                        if (event.target !== firstPuyoInner || event.animationName !== 'puyoPopBody') return;
-                        firstPuyoInner.removeEventListener('animationstart', onFirstPuyoVanish);
-                        setTimeout(() => {
-                            if (sessionId !== gameSessionId) return;
-                            const poppingPuyoIds = toErase.map(({ x, y }) => board[y][x].id);
-                            centerPupils(poppingPuyoIds);
-                            for (const pos of toErase) board[pos.y][pos.x].isSurprised = true;
-                            render();
-                        }, 200);
-                    };
-                    firstPuyoInner.addEventListener('animationstart', onFirstPuyoVanish);
+                showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain);
+                if (!await waitForGameSession(PUYO_CLEAR_FLICKER_DURATION_MS, sessionId)) return;
+
+                const burstOrder = [...toErase];
+                for (let i = burstOrder.length - 1; i > 0; i--) {
+                    const randomIndex = Math.floor(Math.random() * (i + 1));
+                    [burstOrder[i], burstOrder[randomIndex]] = [burstOrder[randomIndex], burstOrder[i]];
                 }
-                showChainPopup(sumX / toErase.length, sumY / toErase.length, currentChain); await sleep(Math.max(700, 445 + maxBurstDelay + 10));
-                if (sessionId !== gameSessionId) return;
+                let maxBurstDelay = 0;
+                burstOrder.forEach(({ x, y }, index) => {
+                    const item = board[y][x];
+                    item.isFlickering = false;
+                    item.isPopping = true;
+                    item.isSurprised = true;
+                    item.burstFinished = true;
+                    item.burstDelay = index * PUYO_CLEAR_VANISH_INTERVAL_MS;
+                    maxBurstDelay = Math.max(maxBurstDelay, item.burstDelay);
+                });
+                centerPupils(toErase.map(({ x, y }) => board[y][x].id));
+                render();
+                if (!await waitForGameSession(PUYO_CLEAR_EXPANSION_DURATION_MS + PUYO_CLEAR_HOLD_DURATION_MS + maxBurstDelay + PUYO_CLEAR_VANISH_DURATION_MS, sessionId)) return;
 
                 for (let pos of toErase) {
                     if (board[pos.y][pos.x]) {
-                        let id = board[pos.y][pos.x].id;
-                        let el = document.getElementById('puyo-' + id);
-                        if (el) {
-                            el.remove();
-                        }
+                        const id = board[pos.y][pos.x].id;
+                        document.getElementById('puyo-' + id)?.remove();
                         board[pos.y][pos.x] = null;
                     }
                 }
@@ -1353,26 +1360,11 @@
             });
 
             fragment.animate(keyframes, {
-                delay: 500 + delayOffset,
+                delay: PUYO_CLEAR_EXPANSION_DURATION_MS + PUYO_CLEAR_HOLD_DURATION_MS + delayOffset,
                 duration: randomBetween(500, 600),
                 easing: 'linear',
                 fill: 'forwards'
             });
-        }
-
-        async function finishPuyoBurstAfterDelay(puyoId, delay, sessionId) {
-            await sleep(delay + 1);
-            if (sessionId !== gameSessionId) return;
-            for (let y = 0; y < ROWS; y++) {
-                for (let x = 0; x < COLS; x++) {
-                    const cell = board[y][x];
-                    if (cell?.id === puyoId && cell.isPopping) {
-                        cell.burstFinished = true;
-                        render();
-                        return;
-                    }
-                }
-            }
         }
 
         function updateStatsUI(scoreDisplay = currentScore) { document.getElementById('currScoreDisp').innerText = String(scoreDisplay); document.getElementById('maxScoreDisp').innerText = maxScore; document.getElementById('totalPoppedDisp').innerText = totalPoppedCount; document.getElementById('maxAllClearDisp').innerText = maxAllClearCount; document.getElementById('maxChainDisp').innerText = maxChainCount; }
@@ -1419,8 +1411,13 @@
                             el.setAttribute('data-pupils', pupilState);
                         }
                         el.className = 'puyo-item' + (isFalling ? ' falling' : ''); el.style.left = `calc(var(--cell-size) * ${x})`; el.style.top = `calc(var(--cell-size) * ${y})`; el.style.transform = 'none';
+                        el.style.setProperty('--puyo-flicker-duration', `${PUYO_CLEAR_FLICKER_DURATION_MS}ms`);
+                        el.style.setProperty('--puyo-pop-expand-duration', `${PUYO_CLEAR_EXPANSION_DURATION_MS}ms`);
+                        el.style.setProperty('--puyo-pop-hold-duration', `${PUYO_CLEAR_HOLD_DURATION_MS}ms`);
+                        el.style.setProperty('--puyo-pop-vanish-duration', `${PUYO_CLEAR_VANISH_DURATION_MS}ms`);
                         if (item.isPopping) el.style.setProperty('--burst-delay', `${item.burstDelay || 0}ms`);
                         else el.style.removeProperty('--burst-delay');
+                        if (item.isFlickering) el.classList.add('puyo-flickering');
                         if (item.isPopping) {
                             el.classList.add('puyo-pop');
                             if (item.isSurprised) el.classList.add('puyo-surprised');
@@ -1444,7 +1441,6 @@
                                 });
                                 const burstLayer = document.getElementById('puyoBurstLayer');
                                 burstLayer.appendChild(fragments);
-                                finishPuyoBurstAfterDelay(item.id, 445 + (item.burstDelay || 0), gameSessionId);
                                 Promise.allSettled(Array.from(fragments.querySelectorAll('.puyo-burst-fragment'))
                                     .flatMap(fragment => fragment.getAnimations().map(animation => animation.finished)))
                                     .then(() => fragments.remove());
