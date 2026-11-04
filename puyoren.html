@@ -192,8 +192,8 @@
             animation: puyoPopBody var(--puyo-pop-expand-duration, 200ms) ease-out forwards, puyoPopVanish var(--puyo-pop-vanish-duration, 1ms) linear calc(var(--puyo-pop-expand-duration, 200ms) + var(--puyo-pop-hold-duration, 500ms) + var(--burst-delay, 0ms)) forwards;
         }
         .puyo-eyes { transform-box: fill-box; transform-origin: center; transition: transform 120ms ease-out; }
-        .puyo-item.puyo-surprised .puyo-eyes { transform: scale(1.5); }
-        .puyo-item.puyo-surprised .puyo-pupil { r: 0.8px; }
+        .puyo-item.puyo-surprised .puyo-eyes { transform: scale(1.4); }
+        .puyo-item.puyo-surprised .puyo-pupil { r: 1.1px; }
         #puyoBurstLayer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 15; }
         .puyo-burst-fragments { position: absolute; pointer-events: none; }
         .puyo-burst-fragment { position: absolute; top: 42%; left: 50%; width: 48%; height: 48%; opacity: 0; will-change: transform, opacity; }
@@ -630,7 +630,7 @@
             if (!colorIndex || !MASTER_PUYO_THEMES[colorIndex]) return '';
             const theme = MASTER_PUYO_THEMES[colorIndex];
             const pupils = pupilOffsets || [{ x: 0, y: 0 }, { x: 0, y: 0 }];
-            const centeredEyesHTML = `<g class="puyo-eyes"><circle cx="15.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.5" cy="25" r="6" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle class="puyo-pupil" cx="15.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle class="puyo-pupil" cx="29.5" cy="25" r="2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" /></g>`;
+            const centeredEyesHTML = `<g class="puyo-eyes"><circle cx="15.8" cy="27.8" r="6.5" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle cx="29.2" cy="27.8" r="6.5" fill="#ffffff" stroke="${theme.stroke}" stroke-width="1.5" /><circle class="puyo-pupil" cx="16.2" cy="27.8" r="2.2" fill="#0f172a" transform="translate(${pupils[0]?.x || 0} ${pupils[0]?.y || 0})" /><circle class="puyo-pupil" cx="29" cy="27.8" r="2.2" fill="#0f172a" transform="translate(${pupils[1]?.x || 0} ${pupils[1]?.y || 0})" /></g>`;
             const highlightHTML = `<ellipse cx="12" cy="14" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-25 12 14)" />`;
             const baseShapePath = isBurst
                 ? "M 22.5 2 A 20.5 20.5 0 1 1 22.5 43 A 20.5 20.5 0 1 1 22.5 2 Z"
