@@ -205,14 +205,11 @@
         @keyframes puyoPopVanish { to { opacity: 0; } }
         @keyframes puyoPopFlicker {
             0% { opacity: 0; animation-timing-function: steps(1, end); }
-            12.5% { opacity: 1; animation-timing-function: steps(1, end); }
-            25% { opacity: 0; animation-timing-function: steps(1, end); }
-            37.5% { opacity: 1; animation-timing-function: steps(1, end); }
-            50% { opacity: 0; animation-timing-function: steps(1, end); }
-            62.5% { opacity: 1; animation-timing-function: steps(1, end); }
-            75% { opacity: 0; animation-timing-function: steps(1, end); }
-            87.5% { opacity: 1; animation-timing-function: steps(1, end); }
-            100% { opacity: 0; }
+            20% { opacity: 1; animation-timing-function: steps(1, end); }
+            40% { opacity: 0; animation-timing-function: steps(1, end); }
+            60% { opacity: 1; animation-timing-function: steps(1, end); }
+            80% { opacity: 0; animation-timing-function: steps(1, end); }
+            100% { opacity: 1; }
         }
         .puyo-item.puyo-landing:not(.active-puyo) { transition: none !important; }
         .puyo-landing .puyo-inner { animation: jellyLandingAnim 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform-origin: center bottom; }
