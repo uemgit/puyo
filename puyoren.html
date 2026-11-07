@@ -145,7 +145,7 @@
         .board {
             position: relative; width: calc(var(--cell-size) * 6 + 10px); height: calc(var(--cell-size) * 13 + 10px);
             background: var(--field-bg); border: 5px solid #2121ff; border-radius: 12px;
-            box-shadow: 0 0 20px rgba(33, 33, 255, 0.8), inset 0 0 15px rgba(0, 0, 0, 0.9); flex-shrink: 0; overflow: hidden; isolation: isolate;
+            box-shadow: 0 0 20px rgba(33, 33, 255, 0.8), inset 0 0 30px rgba(0, 0, 0, 0.9); flex-shrink: 0; overflow: hidden; isolation: isolate;
         }
 
         .grid-layer { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(13, 1fr); pointer-events: none; z-index: 0; }
@@ -1343,7 +1343,7 @@
             const randomBetween = (min, max) => min + Math.random() * (max - min);
             const endX = direction * randomBetween(150, 520), endY = randomBetween(-180, 220);
             const sideSway = randomBetween(-150, 150), arcHeight = randomBetween(260, 480);
-            const startScale = randomBetween(0.5, 0.8), endScale = randomBetween(0.08, 0.2);
+            const startScale = randomBetween(0.5, 0.6), endScale = randomBetween(0.4, 0.5);
             const shrinkExponent = randomBetween(1.1, 2.4), fragmentBaseScale = 0.48;
             const keyframes = Array.from({ length: 61 }, (_, index) => {
                 const progress = index / 60;
