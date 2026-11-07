@@ -64,6 +64,41 @@
             padding: 5px 8px;
         }
 
+        .panel-box.score-box { align-items: stretch; }
+        .score-label-row {
+            display: flex;
+            align-self: stretch;
+            margin-inline: 1ch;
+        }
+
+        .score-value-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            align-self: stretch;
+            width: auto;
+            margin-inline: 1ch;
+            gap: 1ch;
+        }
+
+        .garbage-puyo-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .garbage-info {
+            display: flex;
+            align-items: center;
+            flex: 0 0 auto;
+            gap: 2px;
+        }
+
+        .garbage-count {
+            font-size: clamp(14px, 2.2vh, 18px);
+            text-align: right;
+        }
+
         .stage-area {
             display: flex;
             align-items: center;
@@ -332,8 +367,38 @@
     <div class="app-container">
         
         <div class="top-bar">
-            <div class="panel-box score-box"><span class="panel-lbl">SCORE</span><span id="currScoreDisp" class="stat-val curr-val">0</span></div>
-            <div class="panel-box score-box"><span class="panel-lbl">HI-SCORE</span><span id="maxScoreDisp" class="stat-val curr-val">0</span></div>
+            <div class="panel-box score-box">
+                <div class="score-label-row"><span class="panel-lbl">SCORE</span></div>
+                <div class="score-value-row">
+                    <span id="currScoreDisp" class="stat-val curr-val">0</span>
+                    <span class="garbage-info" aria-label="おじゃまぷよ数">
+                        <svg class="garbage-puyo-icon" viewBox="0 0 45 45" aria-hidden="true">
+                            <path d="M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z" fill="none" stroke="#ffffff" stroke-width="2.5" />
+                            <circle cx="15.5" cy="28" r="5.8" fill="none" stroke="#ffffff" stroke-width="1.8" />
+                            <circle cx="29.5" cy="28" r="5.8" fill="none" stroke="#ffffff" stroke-width="1.8" />
+                            <circle cx="15.5" cy="28" r="2" fill="#ffffff" />
+                            <circle cx="29.5" cy="28" r="2" fill="#ffffff" />
+                        </svg>
+                        <span id="garbageCountDisp" class="stat-val curr-val garbage-count" aria-live="polite">0</span>
+                    </span>
+                </div>
+            </div>
+            <div class="panel-box score-box">
+                <div class="score-label-row"><span class="panel-lbl">HI-SCORE</span></div>
+                <div class="score-value-row">
+                    <span id="maxScoreDisp" class="stat-val curr-val">0</span>
+                    <span class="garbage-info" aria-label="ハイスコアに対するおじゃまぷよ数">
+                        <svg class="garbage-puyo-icon" viewBox="0 0 45 45" aria-hidden="true">
+                            <path d="M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z" fill="none" stroke="#ffffff" stroke-width="2.5" />
+                            <circle cx="15.5" cy="28" r="5.8" fill="none" stroke="#ffffff" stroke-width="1.8" />
+                            <circle cx="29.5" cy="28" r="5.8" fill="none" stroke="#ffffff" stroke-width="1.8" />
+                            <circle cx="15.5" cy="28" r="2" fill="#ffffff" />
+                            <circle cx="29.5" cy="28" r="2" fill="#ffffff" />
+                        </svg>
+                        <span id="maxGarbageCountDisp" class="stat-val curr-val garbage-count" aria-live="polite">0</span>
+                    </span>
+                </div>
+            </div>
         </div>
 
         <div class="stage-area">
@@ -373,7 +438,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="panel-box"><span class="panel-lbl">ぷよ消し数</span><span id="totalPoppedDisp" class="stat-val curr-val">0</span></div>
+                    <div class="panel-box"><span class="panel-lbl">手数</span><span id="stepCountDisp" class="stat-val curr-val">0</span></div>
                     <div class="panel-box"><span class="panel-lbl">全消し数</span><span id="maxAllClearDisp" class="stat-val ac-val">0</span></div>
                     <div class="panel-box"><span class="panel-lbl">最大連鎖</span><span id="maxChainDisp" class="stat-val max-chain-val">0</span></div>
                 </div>
@@ -499,7 +564,7 @@
         }
 
         let activeColorPalette = [], board = [], puyoQueue = [], activePiece = null, historyStack = [];
-        let maxChainCount = 0, currentAllClearCount = 0, maxAllClearCount = 0, totalPoppedCount = 0, currentScore = 0, maxScore = 0;
+        let maxChainCount = 0, currentAllClearCount = 0, maxAllClearCount = 0, stepCount = 0, currentScore = 0, maxScore = 0;
         let currentColorCount = 4, isAnimating = false, isDropping = false, isGameOver = false, nextPuyoId = 1, unconnectedIds = new Set();
         
         let gravityLevel = 0, gravityEnabled = false, gravityInterval = 1500;
@@ -573,7 +638,7 @@
 
         function saveResumeData() {
             try {
-                const data = { board, puyoQueue, activeColorPalette, currentColorCount, currentScore, maxScore, totalPoppedCount, maxAllClearCount, currentAllClearCount, maxChainCount, nextPuyoId, isGameOver, activePiece: activePiece ? { ...activePiece } : null, gravityLevel, gravityEnabled, gravityInterval };
+                const data = { board, puyoQueue, activeColorPalette, currentColorCount, currentScore, maxScore, stepCount, maxAllClearCount, currentAllClearCount, maxChainCount, nextPuyoId, isGameOver, activePiece: activePiece ? { ...activePiece } : null, gravityLevel, gravityEnabled, gravityInterval };
                 localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(data));
             } catch (e) {}
         }
@@ -584,7 +649,7 @@
                 const data = JSON.parse(json); if (!data || !data.board) return false;
                 board = data.board; puyoQueue = data.puyoQueue || []; currentColorCount = data.currentColorCount || 4;
                 if (Array.isArray(data.activeColorPalette) && data.activeColorPalette.length === currentColorCount) { activeColorPalette = [...data.activeColorPalette]; } else { pickColorPalette(); }
-                currentScore = data.currentScore || 0; maxScore = data.maxScore || 0; totalPoppedCount = data.totalPoppedCount || 0; maxAllClearCount = data.maxAllClearCount || 0; currentAllClearCount = data.currentAllClearCount || 0; maxChainCount = data.maxChainCount || 0; nextPuyoId = data.nextPuyoId || 1; isGameOver = !!data.isGameOver; 
+                currentScore = data.currentScore || 0; maxScore = data.maxScore || 0; stepCount = data.stepCount || 0; maxAllClearCount = data.maxAllClearCount || 0; currentAllClearCount = data.currentAllClearCount || 0; maxChainCount = data.maxChainCount || 0; nextPuyoId = data.nextPuyoId || 1; isGameOver = !!data.isGameOver; 
                 activePiece = data.activePiece ? { ...data.activePiece, rot: data.activePiece.rot || 0, angle: data.activePiece.angle || 0, fallProgress: data.activePiece.fallProgress || 0 } : null;
                 if (activePiece) {
                     activePiece.landedAt = activePiece.isLanded ? Date.now() : null;
@@ -852,7 +917,7 @@
             clearQueueAdvanceAnimation();
             pickColorPalette(); initBoard(); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects();
             puyoQueue = []; historyStack = []; unconnectedIds.clear(); isGameOver = false; isAnimating = false; isDropping = false; lastRotateFailedState = null;
-            currentAllClearCount = 0; totalPoppedCount = 0; currentScore = 0;
+            currentAllClearCount = 0; stepCount = 0; currentScore = 0;
             updateStatsUI(); document.getElementById('gameOverMask').classList.add('hidden'); updateUndoBtn(); refillQueue(); spawnPiece(); render();
         }
 
@@ -874,7 +939,6 @@
                 maxAllClearCount = 0;
                 currentScore = 0;
                 currentAllClearCount = 0;
-                totalPoppedCount = 0;
                 updateStatsUI();
                 saveResumeData();
                 document.getElementById('scoreResetStatus').textContent = '✔︎';
@@ -1094,7 +1158,7 @@
         }
 
         function saveState() {
-            historyStack.push({ board: board.map(r => r.map(c => c ? { ...c } : null)), puyoQueue: JSON.parse(JSON.stringify(puyoQueue)), activeColorPalette: [...activeColorPalette], currentColorCount: currentColorCount, maxChainCount, currentAllClearCount, maxAllClearCount, totalPoppedCount, currentScore, maxScore, activePiece: activePiece ? { ...activePiece } : null });
+            historyStack.push({ board: board.map(r => r.map(c => c ? { ...c } : null)), puyoQueue: JSON.parse(JSON.stringify(puyoQueue)), activeColorPalette: [...activeColorPalette], currentColorCount: currentColorCount, maxChainCount, currentAllClearCount, maxAllClearCount, stepCount, currentScore, maxScore, activePiece: activePiece ? { ...activePiece } : null });
             updateUndoBtn();
         }
 
@@ -1106,7 +1170,7 @@
             isDropping = false;
             const prev = historyStack.pop();
             board = prev.board.map(r => r.map(c => c ? { ...c } : null)); puyoQueue = prev.puyoQueue; activeColorPalette = [...prev.activeColorPalette]; currentColorCount = prev.currentColorCount || 4;
-            maxChainCount = prev.maxChainCount; currentAllClearCount = prev.currentAllClearCount; maxAllClearCount = prev.maxAllClearCount; totalPoppedCount = prev.totalPoppedCount || 0; currentScore = prev.currentScore; maxScore = prev.maxScore;
+            maxChainCount = prev.maxChainCount; currentAllClearCount = prev.currentAllClearCount; maxAllClearCount = prev.maxAllClearCount; stepCount = prev.stepCount || 0; currentScore = prev.currentScore; maxScore = prev.maxScore;
             
             activePiece = prev.activePiece ? { ...prev.activePiece } : null;
             if (activePiece) {
@@ -1160,6 +1224,9 @@
             if ((isAnimating && !isAlreadyAnimating) || isGameOver || !activePiece) return;
             const sessionId = gameSessionId;
             isAnimating = true; stopGravity(); if (!stateIsSaved) saveState();
+            stepCount++;
+            updateStatsUI();
+            saveResumeData();
             activePiece.fallProgress = 0;
             activePiece.isLanded = true;
             activePiece.landedAt = null;
@@ -1258,9 +1325,9 @@
 
             while (true) {
                 let { toErase, eraseGroups } = findMatches(); if (toErase.length === 0) break;
-                if (!firstChainStarted) { currentScore = 0; totalPoppedCount = 0; firstChainStarted = true; }
+                if (!firstChainStarted) { currentScore = 0; firstChainStarted = true; }
                 currentChain++; if (currentChain > maxChainCount) maxChainCount = currentChain;
-                totalPoppedCount += toErase.length; triggerVibration([30, 20]);
+                triggerVibration([30, 20]);
 
                 let totalErasedCount = 0, connectBonusSum = 0, colorsErased = new Set();
                 for (let g of eraseGroups) { totalErasedCount += g.count; connectBonusSum += getConnectBonus(g.count); colorsErased.add(g.color); }
@@ -1365,7 +1432,7 @@
             });
         }
 
-        function updateStatsUI(scoreDisplay = currentScore) { document.getElementById('currScoreDisp').innerText = String(scoreDisplay); document.getElementById('maxScoreDisp').innerText = maxScore; document.getElementById('totalPoppedDisp').innerText = totalPoppedCount; document.getElementById('maxAllClearDisp').innerText = maxAllClearCount; document.getElementById('maxChainDisp').innerText = maxChainCount; }
+        function updateStatsUI(scoreDisplay = currentScore) { document.getElementById('currScoreDisp').innerText = String(scoreDisplay); document.getElementById('garbageCountDisp').innerText = String(Math.floor(currentScore / 70)); document.getElementById('maxScoreDisp').innerText = maxScore; document.getElementById('maxGarbageCountDisp').innerText = String(Math.floor(maxScore / 70)); document.getElementById('stepCountDisp').innerText = stepCount; document.getElementById('maxAllClearDisp').innerText = maxAllClearCount; document.getElementById('maxChainDisp').innerText = maxChainCount; }
 
         function render(isFalling = false) {
             const layer = document.getElementById('puyoLayer'); const currentIds = new Set();
