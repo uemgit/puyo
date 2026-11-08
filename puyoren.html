@@ -676,16 +676,24 @@
         function createPuyoConnectionMarkup(colorIndex, conn) {
             const theme = MASTER_PUYO_THEMES[colorIndex];
             if (!theme) return '';
-            const seamOverlap = 1.2;
+            const seam = 45 + 1.2;
             let connFill = "", connOutline = "";
-            if (conn.r) connFill += `<rect x="20" y="14" width="${25 + seamOverlap}" height="24" fill="${theme.base}" />`;
-            if (conn.l) connFill += `<rect x="${-seamOverlap}" y="14" width="${25 + seamOverlap}" height="24" fill="${theme.base}" />`;
-            if (conn.b) connFill += `<rect x="7.5" y="20" width="30" height="${25 + seamOverlap}" fill="${theme.base}" />`;
-            if (conn.t) connFill += `<rect x="7.5" y="${-seamOverlap}" width="30" height="${25 + seamOverlap}" fill="${theme.base}" />`;
-            if (conn.r) connOutline += `<path d="M 37.5 13.123 H ${45 + seamOverlap} M 37.5 37.87 H ${45 + seamOverlap}" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
-            if (conn.l) connOutline += `<path d="M ${-seamOverlap} 13.123 H 7.5 M ${-seamOverlap} 37.87 H 7.5" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
-            if (conn.b) connOutline += `<path d="M 7.5 37.87 V ${45 + seamOverlap} M 37.5 37.87 V ${45 + seamOverlap}" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
-            if (conn.t) connOutline += `<path d="M 7.5 ${-seamOverlap} V 13.123 M 37.5 ${-seamOverlap} V 13.123" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="butt" />`;
+            if (conn.r) {
+                connFill += `<path d="M 20 12.5 H 37.5 C 40.4 16.12 43.8 14.7 ${seam} 14.7 V 35.3 C 43.8 35.3 40.4 35.6 37.5 37.87 H 20 Z" fill="${theme.base}" />`;
+                connOutline += `<path d="M 37.5 13.123 C 40.4 16.12 43.8 14.7 ${seam} 14.7 M 37.5 37.87 C 40.4 35.6 43.8 35.3 ${seam} 35.3" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`;
+            }
+            if (conn.l) {
+                connFill += `<path d="M 25 12.5 H 7.5 C 4.6 16.12 1.2 14.7 -1.2 14.7 V 35.3 C 1.2 35.3 4.6 35.6 7.5 37.87 H 25 Z" fill="${theme.base}" />`;
+                connOutline += `<path d="M 7.5 13.123 C 4.6 16.12 1.2 14.7 -1.2 14.7 M 7.5 37.87 C 4.6 35.6 1.2 35.3 -1.2 35.3" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`;
+            }
+            if (conn.b) {
+                connFill += `<path d="M 7.5 20 V 37.87 C 8.4 40.4 10.7 43.8 10.7 ${seam} H 34.3 C 34.3 43.8 36.6 40.4 37.5 37.87 V 20 Z" fill="${theme.base}" />`;
+                connOutline += `<path d="M 7.5 37.87 C 10.9 41.9 10.7 43.5 10.7 45 M 37.5 37.87 C 34.1 41.9 34.3 43.5 34.3 45" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`;
+            }
+            if (conn.t) {
+                connFill += `<path d="M 7.5 25 V 13.123 C 8.4 10.2 10.7 3.5 10.7 0 H 34.3 C 34.3 3.5 36.6 10.2 37.5 13.123 V 25 Z" fill="${theme.base}" />`;
+                connOutline += `<path d="M 7.5 13.123 C 10.9 9.1 10.7 1.5 10.7 0 M 37.5 13.123 C 34.1 9.1 34.3 1.5 34.3 0" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`;
+            }
             return `${connFill}${connOutline}`;
         }
 
