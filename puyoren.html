@@ -679,12 +679,12 @@
             const seam = 45 + 1.2;
             let connFill = "", connOutline = "";
             if (conn.r) {
-                connFill += `<path d="M 20 12.5 H 37.5 C 40.4 16.12 43.8 14.7 ${seam} 14.7 V 35.3 C 43.8 35.3 40.4 35.6 37.5 37.87 H 20 Z" fill="${theme.base}" />`;
-                connOutline += `<path d="M 37.5 13.123 C 40.4 16.12 43.8 14.7 ${seam} 14.7 M 37.5 37.87 C 40.4 35.6 43.8 35.3 ${seam} 35.3" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`;
+                connFill += `<path d="M 20 12.5 H 37.5 V 13.123 C 40.4 15.393 43.8 15.693 ${seam} 15.693 V 35.3 C 43.8 35.3 40.4 35.6 37.5 37.87 H 20 Z" fill="${theme.base}" />`;
+                connOutline += `<path d="M 37.5 13.123 C 40.4 15.393 43.8 15.693 ${seam} 15.693 M 37.5 37.87 C 40.4 35.6 43.8 35.3 ${seam} 35.3" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`;
             }
             if (conn.l) {
-                connFill += `<path d="M 25 12.5 H 7.5 C 4.6 16.12 1.2 14.7 -1.2 14.7 V 35.3 C 1.2 35.3 4.6 35.6 7.5 37.87 H 25 Z" fill="${theme.base}" />`;
-                connOutline += `<path d="M 7.5 13.123 C 4.6 16.12 1.2 14.7 -1.2 14.7 M 7.5 37.87 C 4.6 35.6 1.2 35.3 -1.2 35.3" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`;
+                connFill += `<path d="M 25 12.5 H 7.5 V 13.123 C 4.6 15.393 1.2 15.693 -1.2 15.693 V 35.3 C 1.2 35.3 4.6 35.6 7.5 37.87 H 25 Z" fill="${theme.base}" />`;
+                connOutline += `<path d="M 7.5 13.123 C 4.6 15.393 1.2 15.693 -1.2 15.693 M 7.5 37.87 C 4.6 35.6 1.2 35.3 -1.2 35.3" fill="none" stroke="${theme.stroke}" stroke-width="2.5" stroke-linecap="round" />`;
             }
             if (conn.b) {
                 connFill += `<path d="M 7.5 20 V 37.87 C 8.4 40.4 10.7 43.8 10.7 ${seam} H 34.3 C 34.3 43.8 36.6 40.4 37.5 37.87 V 20 Z" fill="${theme.base}" />`;
