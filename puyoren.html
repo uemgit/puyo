@@ -68,17 +68,32 @@
         .score-label-row {
             display: flex;
             align-self: stretch;
-            margin-inline: 1ch;
+            margin-inline: 5px;
         }
 
         .score-value-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) max-content;
             align-items: center;
-            justify-content: space-between;
             align-self: stretch;
             width: auto;
-            margin-inline: 1ch;
+            margin-inline: 5px;
             gap: 1ch;
+        }
+
+        .score-display {
+            display: flex;
+            align-items: baseline;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .score-chain-multiplier {
+            margin-left: 0.2em;
+            font-size: clamp(12px, 1.8vh, 14px);
+            font-weight: 800;
+            line-height: 1;
+            white-space: nowrap;
         }
 
         .garbage-puyo-icon {
@@ -97,6 +112,17 @@
         .garbage-count {
             font-size: clamp(14px, 2.2vh, 18px);
             text-align: right;
+        }
+
+        @media (max-width: 800px) {
+            .score-value-row { gap: 3px; }
+        }
+
+        @media (max-width: 430px) {
+            .score-value-row { gap: 2px; }
+            .score-box:nth-child(2) #maxScoreDisp { font-size: clamp(12px, 1.8vh, 15px); }
+            .garbage-puyo-icon { width: 16px; height: 16px; }
+            .score-box .garbage-count { font-size: clamp(9px, 1.5vh, 14px); }
         }
 
         .stage-area {
@@ -370,7 +396,10 @@
             <div class="panel-box score-box">
                 <div class="score-label-row"><span class="panel-lbl">SCORE</span></div>
                 <div class="score-value-row">
-                    <span id="currScoreDisp" class="stat-val curr-val">0</span>
+                    <span id="currScoreDisp" class="score-display curr-val">
+                        <span id="currScoreBase" class="stat-val">0</span>
+                        <span id="currScoreMultiplier" class="score-chain-multiplier" hidden></span>
+                    </span>
                     <span class="garbage-info" aria-label="おじゃまぷよ数">
                         <svg class="garbage-puyo-icon" viewBox="0 0 45 45" aria-hidden="true">
                             <path d="M 22.5 7 C 12 7, 4 14, 2.5 23 C 1 34, 7 42, 22.5 42 C 38 42, 44 34, 42.5 23 C 41 14, 33 7, 22.5 7 Z" fill="none" stroke="#ffffff" stroke-width="2.5" />
@@ -1344,7 +1373,7 @@
                 
                 currentScore += totalErasedCount * totalBonus * 10; if (currentScore > maxScore) maxScore = currentScore;
                 const scoreBase = totalErasedCount * 10;
-                updateStatsUI(`${scoreBase} x ${totalBonus}`);
+                updateStatsUI(scoreBase, totalBonus);
 
                 let sumX = 0, sumY = 0;
                 for (const pos of toErase) {
@@ -1440,7 +1469,19 @@
             });
         }
 
-        function updateStatsUI(scoreDisplay = currentScore) { document.getElementById('currScoreDisp').innerText = String(scoreDisplay); document.getElementById('garbageCountDisp').innerText = String(Math.floor(currentScore / 70)); document.getElementById('maxScoreDisp').innerText = maxScore; document.getElementById('maxGarbageCountDisp').innerText = String(Math.floor(maxScore / 70)); document.getElementById('stepCountDisp').innerText = stepCount; document.getElementById('maxAllClearDisp').innerText = maxAllClearCount; document.getElementById('maxChainDisp').innerText = maxChainCount; }
+        function updateStatsUI(scoreDisplay = currentScore, scoreMultiplier = null) {
+            const scoreBase = document.getElementById('currScoreBase');
+            const multiplier = document.getElementById('currScoreMultiplier');
+            scoreBase.textContent = String(scoreDisplay);
+            multiplier.hidden = scoreMultiplier === null;
+            multiplier.textContent = scoreMultiplier === null ? '' : `×${scoreMultiplier}`;
+            document.getElementById('garbageCountDisp').innerText = String(Math.floor(currentScore / 70));
+            document.getElementById('maxScoreDisp').innerText = maxScore;
+            document.getElementById('maxGarbageCountDisp').innerText = String(Math.floor(maxScore / 70));
+            document.getElementById('stepCountDisp').innerText = stepCount;
+            document.getElementById('maxAllClearDisp').innerText = maxAllClearCount;
+            document.getElementById('maxChainDisp').innerText = maxChainCount;
+        }
 
         function render(isFalling = false) {
             const layer = document.getElementById('puyoLayer'); const currentIds = new Set();
