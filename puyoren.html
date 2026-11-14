@@ -591,6 +591,7 @@
         }
 
         let activeColorPalette = [], board = [], puyoQueue = [], activePiece = null, historyStack = [];
+        let tsumoSeed = null, tsumoIndex = 0, tsumoHands = [];
         let maxChainCount = 0, currentAllClearCount = 0, maxAllClearCount = 0, stepCount = 0, currentScore = 0, maxScore = 0;
         let currentColorCount = 4, isAnimating = false, isDropping = false, isGameOver = false, nextPuyoId = 1, unconnectedIds = new Set();
         
@@ -665,7 +666,7 @@
 
         function saveResumeData() {
             try {
-                const data = { board, puyoQueue, activeColorPalette, currentColorCount, currentScore, maxScore, stepCount, maxAllClearCount, currentAllClearCount, maxChainCount, nextPuyoId, isGameOver, activePiece: activePiece ? { ...activePiece } : null, gravityLevel, gravityEnabled, gravityInterval };
+                const data = { board, puyoQueue, activeColorPalette, currentColorCount, tsumoSeed, tsumoIndex, currentScore, maxScore, stepCount, maxAllClearCount, currentAllClearCount, maxChainCount, nextPuyoId, isGameOver, activePiece: activePiece ? { ...activePiece } : null, gravityLevel, gravityEnabled, gravityInterval };
                 localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(data));
             } catch (e) {}
         }
@@ -675,7 +676,12 @@
                 const json = localStorage.getItem(SAVE_STORAGE_KEY); if (!json) return false;
                 const data = JSON.parse(json); if (!data || !data.board) return false;
                 board = data.board; puyoQueue = data.puyoQueue || []; currentColorCount = data.currentColorCount || 4;
-                if (Array.isArray(data.activeColorPalette) && data.activeColorPalette.length === currentColorCount) { activeColorPalette = [...data.activeColorPalette]; } else { pickColorPalette(); }
+                const hasSavedTsumoSeed = Number.isInteger(data.tsumoSeed) && data.tsumoSeed >= 0 && data.tsumoSeed <= 65535;
+                initializePuyoTsumo(hasSavedTsumoSeed ? data.tsumoSeed : Math.floor(Math.random() * 65536));
+                tsumoIndex = Number.isInteger(data.tsumoIndex) && data.tsumoIndex >= 0
+                    ? data.tsumoIndex % tsumoHands.length
+                    : puyoQueue.length % tsumoHands.length;
+                if (!hasSavedTsumoSeed && Array.isArray(data.activeColorPalette) && data.activeColorPalette.length === currentColorCount) { activeColorPalette = [...data.activeColorPalette]; }
                 currentScore = data.currentScore || 0; maxScore = data.maxScore || 0; stepCount = data.stepCount || 0; maxAllClearCount = data.maxAllClearCount || 0; currentAllClearCount = data.currentAllClearCount || 0; maxChainCount = data.maxChainCount || 0; nextPuyoId = data.nextPuyoId || 1; isGameOver = !!data.isGameOver; 
                 activePiece = data.activePiece ? { ...data.activePiece, rot: data.activePiece.rot || 0, angle: data.activePiece.angle || 0, fallProgress: data.activePiece.fallProgress || 0 } : null;
                 if (activePiece) {
@@ -739,8 +745,70 @@
 
         function initGrid() { const gridBg = document.getElementById('gridBg'); gridBg.innerHTML = ''; for (let i = 0; i < ROWS * COLS; i++) { const cell = document.createElement('div'); cell.className = 'grid-cell'; gridBg.appendChild(cell); } }
         function initBoard() { board = Array.from({ length: ROWS }, () => Array(COLS).fill(null)); initGrid(); }
-        function pickColorPalette() { const allColors = [1, 2, 3, 4, 5]; if (currentColorCount === 5) { activeColorPalette = allColors; } else { activeColorPalette = [...allColors].sort(() => Math.random() - 0.5).slice(0, currentColorCount); } }
-        function generatePiece() { return { main: activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)], sub: activeColorPalette[Math.floor(Math.random() * activeColorPalette.length)] }; }
+        function generatePuyoTsumo(seed, colorCount = 4) {
+            if (!Number.isInteger(seed) || seed < 0 || seed > 65535) throw new RangeError('seed must be an integer from 0 to 65535');
+            if (![3, 4, 5].includes(colorCount)) throw new RangeError('colorCount must be 3, 4, or 5');
+
+            let state = seed >>> 0;
+            const rng = () => {
+                state = (Math.imul(state, 0x5d588b65) + 0x269ec3) >>> 0;
+                return state;
+            };
+            const colorOrder = [1, 3, 2, 4, 5]; // Red, green, blue, yellow, purple in app color IDs.
+            for (let i = 0; i < colorOrder.length; i++) {
+                const offset = ((rng() >>> 16) * (colorOrder.length - i)) >>> 16;
+                const swapIndex = i + offset;
+                [colorOrder[i], colorOrder[swapIndex]] = [colorOrder[swapIndex], colorOrder[i]];
+            }
+
+            const queues = [3, 4, 5].map(colorTotal => Uint8Array.from({ length: 256 }, (_, i) => i % colorTotal));
+            for (const queue of queues) {
+                for (let block = 0; block < 15; block++) {
+                    for (let i = 0; i < 8; i++) {
+                        const first = (rng() >>> 28) + block * 16;
+                        const second = (rng() >>> 28) + (block + 1) * 16;
+                        [queue[first], queue[second]] = [queue[second], queue[first]];
+                    }
+                }
+                for (let block = 0; block < 7; block++) {
+                    for (let i = 0; i < 16; i++) {
+                        const first = (rng() >>> 27) + block * 32;
+                        const second = (rng() >>> 27) + (block + 1) * 32;
+                        [queue[first], queue[second]] = [queue[second], queue[first]];
+                    }
+                }
+                for (let block = 0; block < 3; block++) {
+                    for (let i = 0; i < 32; i++) {
+                        const first = (rng() >>> 26) + block * 64;
+                        const second = (rng() >>> 26) + (block + 1) * 64;
+                        [queue[first], queue[second]] = [queue[second], queue[first]];
+                    }
+                }
+            }
+
+            for (let i = 0; i < 4; i++) {
+                queues[1][i] = queues[0][i];
+                queues[2][i] = queues[0][i];
+            }
+            const sequence = queues[colorCount - 3].map(colorIndex => colorOrder[colorIndex]);
+            const hands = [];
+            for (let i = 0; i < sequence.length; i += 2) hands.push([sequence[i], sequence[i + 1]]);
+            return { hands, colorOrder };
+        }
+
+        function initializePuyoTsumo(seed) {
+            const tsumo = generatePuyoTsumo(seed, currentColorCount);
+            tsumoSeed = seed;
+            tsumoIndex = 0;
+            tsumoHands = tsumo.hands;
+            activeColorPalette = tsumo.colorOrder.slice(0, currentColorCount);
+        }
+
+        function generatePiece() {
+            const hand = tsumoHands[tsumoIndex];
+            tsumoIndex = (tsumoIndex + 1) % tsumoHands.length;
+            return { main: hand[0], sub: hand[1] };
+        }
         function refillQueue() { while (puyoQueue.length < 3) puyoQueue.push(generatePiece()); }
 
         function clearQueueAdvanceAnimation() {
@@ -950,8 +1018,9 @@
         function startGame() {
             gameSessionId++;
             clearQueueAdvanceAnimation();
-            pickColorPalette(); initBoard(); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects();
+            initBoard(); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects();
             puyoQueue = []; historyStack = []; unconnectedIds.clear(); isGameOver = false; isAnimating = false; isDropping = false; lastRotateFailedState = null;
+            initializePuyoTsumo(Math.floor(Math.random() * 65536));
             currentAllClearCount = 0; stepCount = 0; currentScore = 0;
             updateStatsUI(); document.getElementById('gameOverMask').classList.add('hidden'); updateUndoBtn(); refillQueue(); spawnPiece(); render();
         }
@@ -1193,7 +1262,7 @@
         }
 
         function saveState() {
-            historyStack.push({ board: board.map(r => r.map(c => c ? { ...c } : null)), puyoQueue: JSON.parse(JSON.stringify(puyoQueue)), activeColorPalette: [...activeColorPalette], currentColorCount: currentColorCount, maxChainCount, currentAllClearCount, maxAllClearCount, stepCount, currentScore, maxScore, activePiece: activePiece ? { ...activePiece } : null });
+            historyStack.push({ board: board.map(r => r.map(c => c ? { ...c } : null)), puyoQueue: JSON.parse(JSON.stringify(puyoQueue)), activeColorPalette: [...activeColorPalette], currentColorCount: currentColorCount, tsumoSeed, tsumoIndex, maxChainCount, currentAllClearCount, maxAllClearCount, stepCount, currentScore, maxScore, activePiece: activePiece ? { ...activePiece } : null });
             updateUndoBtn();
         }
 
@@ -1204,7 +1273,8 @@
             isAnimating = false;
             isDropping = false;
             const prev = historyStack.pop();
-            board = prev.board.map(r => r.map(c => c ? { ...c } : null)); puyoQueue = prev.puyoQueue; activeColorPalette = [...prev.activeColorPalette]; currentColorCount = prev.currentColorCount || 4;
+            board = prev.board.map(r => r.map(c => c ? { ...c } : null)); puyoQueue = prev.puyoQueue; currentColorCount = prev.currentColorCount || 4;
+            initializePuyoTsumo(prev.tsumoSeed); tsumoIndex = prev.tsumoIndex;
             maxChainCount = prev.maxChainCount; currentAllClearCount = prev.currentAllClearCount; maxAllClearCount = prev.maxAllClearCount; stepCount = prev.stepCount || 0; currentScore = prev.currentScore; maxScore = prev.maxScore;
             
             activePiece = prev.activePiece ? { ...prev.activePiece } : null;
