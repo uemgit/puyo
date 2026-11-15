@@ -1430,7 +1430,11 @@
 
             while (true) {
                 let { toErase, eraseGroups } = findMatches(); if (toErase.length === 0) break;
-                if (!firstChainStarted) { currentScore = 0; firstChainStarted = true; }
+                if (!firstChainStarted) {
+                    currentScore = 0;
+                    document.getElementById('garbageCountDisp').innerText = '0';
+                    firstChainStarted = true;
+                }
                 currentChain++; if (currentChain > maxChainCount) maxChainCount = currentChain;
                 triggerVibration([30, 20]);
 
@@ -1543,9 +1547,11 @@
             scoreBase.textContent = String(scoreDisplay);
             multiplier.hidden = scoreMultiplier === null;
             multiplier.textContent = scoreMultiplier === null ? '' : `x ${scoreMultiplier}`;
-            document.getElementById('garbageCountDisp').innerText = String(Math.floor(currentScore / 70));
+            if (scoreMultiplier === null) {
+                document.getElementById('garbageCountDisp').innerText = String(Math.floor(currentScore / 70));
+                document.getElementById('maxGarbageCountDisp').innerText = String(Math.floor(maxScore / 70));
+            }
             document.getElementById('maxScoreDisp').innerText = maxScore;
-            document.getElementById('maxGarbageCountDisp').innerText = String(Math.floor(maxScore / 70));
             document.getElementById('stepCountDisp').innerText = stepCount;
             document.getElementById('maxAllClearDisp').innerText = maxAllClearCount;
             document.getElementById('maxChainDisp').innerText = maxChainCount;
