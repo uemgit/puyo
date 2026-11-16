@@ -508,6 +508,7 @@
         const LOCK_DELAY_MS = 530;
         const SCORE_RESET_HOLD_MS = 5000;
         const DROP_STEP_DURATION_MS = 16;
+        const FALL_RENDER_STEP_CELLS = 0.5;
         const PUYO_CLEAR_FLICKER_DURATION_MS = 500;
         const PUYO_CLEAR_EXPANSION_DURATION_MS = 100;
         const PUYO_CLEAR_HOLD_DURATION_MS = 100;
@@ -1649,6 +1650,7 @@
                     fp = activePiece.fallProgress || 0;
                     if (!canPlacePiece({ ...activePiece, y: activePiece.y + 1 })) fp = 0; 
                 }
+                const renderedFallProgress = Math.floor(fp / FALL_RENDER_STEP_CELLS) * FALL_RENDER_STEP_CELLS;
 
                 if (!isAnimating) {
                     let ghostDrop = 0; while (true) { let test = { ...activePiece, y: activePiece.y + ghostDrop + 1 }; if (canPlacePiece(test)) ghostDrop++; else break; }
@@ -1674,8 +1676,8 @@
                 aMain.className = 'puyo-item' + axisClass + activeClass + landingClass + landedClass + (isFalling ? ' falling' : ''); 
                 aSub.className = 'puyo-item active-sub-puyo' + activeClass + landingClass + landedClass + (isFalling ? ' falling' : '');
                 
-                aMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aMain.style.top = `calc(var(--cell-size) * ${activePiece.y + fp})`; aMain.style.transform = 'none';
-                aSub.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aSub.style.top = `calc(var(--cell-size) * ${activePiece.y + fp})`; 
+                aMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aMain.style.top = `calc(var(--cell-size) * ${activePiece.y + renderedFallProgress})`; aMain.style.transform = 'none';
+                aSub.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aSub.style.top = `calc(var(--cell-size) * ${activePiece.y + renderedFallProgress})`; 
                 aSub.style.transform = `rotate(${activePiece.angle}deg) translateY(-100%) rotate(${-activePiece.angle}deg)`;
             }
 
