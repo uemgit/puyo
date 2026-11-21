@@ -467,7 +467,7 @@
                         </div>
                     </div>
                     <div class="panel-box"><span class="panel-lbl">手数</span><span id="stepCountDisp" class="stat-val curr-val">0</span></div>
-                    <div class="panel-box"><span class="panel-lbl">全消し数</span><span id="maxAllClearDisp" class="stat-val ac-val">0</span></div>
+                    <div class="panel-box"><span class="panel-lbl">全消し数</span><span id="allClearCountDisp" class="stat-val ac-val">0</span></div>
                     <div class="panel-box"><span class="panel-lbl">最大連鎖</span><span id="maxChainDisp" class="stat-val max-chain-val">0</span></div>
                 </div>
             </div>
@@ -1555,7 +1555,7 @@
             }
             document.getElementById('maxScoreDisp').innerText = maxScore;
             document.getElementById('stepCountDisp').innerText = stepCount;
-            document.getElementById('maxAllClearDisp').innerText = maxAllClearCount;
+            document.getElementById('allClearCountDisp').innerText = currentAllClearCount;
             document.getElementById('maxChainDisp').innerText = maxChainCount;
         }
 
