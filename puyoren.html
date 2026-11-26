@@ -599,6 +599,7 @@
         
         let gravityLevel = 0, gravityEnabled = false, gravityInterval = 1500;
         let gravityRAF = null, lastTime = null;
+        let lockDelayToken = 0, lockDelayPieceId = null;
 
         function updateGravityControl() {
             document.getElementById('gravityLevelDisp').textContent = gravityLevel === 0 ? 'OFF' : `${gravityLevel}速`;
@@ -612,7 +613,7 @@
             gravityEnabled = gravityLevel > 0;
             if (gravityEnabled) gravityInterval = GRAVITY_INTERVALS[gravityLevel];
             stopGravity();
-            if ((gravityEnabled || activePiece?.isLanded) && activePiece && !isGameOver && !isAnimating) startGravity();
+            if (gravityEnabled && activePiece && !activePiece.isLanded && !isGameOver && !isAnimating) startGravity();
             updateGravityControl();
             render();
             saveResumeData();
@@ -622,8 +623,9 @@
             if (!lastTime) lastTime = timestamp;
             const delta = timestamp - lastTime;
             lastTime = timestamp;
+            let movedCell = false, blockedStep = false;
 
-            if (gravityEnabled && !isGameOver && !isAnimating && activePiece) {
+            if (gravityEnabled && !isGameOver && !isAnimating && activePiece && !activePiece.isLanded) {
                 activePiece.fallProgress = (activePiece.fallProgress || 0) + (delta / gravityInterval);
                 
                 if (activePiece.fallProgress >= 1) {
@@ -632,22 +634,27 @@
                     for (let i = 0; i < steps; i++) {
                         if (canPlacePiece({ ...activePiece, y: activePiece.y + 1 })) {
                             activePiece.y++;
+                            movedCell = true;
                         } else {
                             activePiece.fallProgress = 0;
+                            blockedStep = true;
                             break;
                         }
                     }
                 }
             }
 
-            if (activePiece && !isGameOver && !isAnimating) {
-                const now = Date.now();
-                updateLandingState(now);
-                lockPieceIfReady(now);
-            }
+            if ((movedCell || blockedStep) && activePiece && !isGameOver && !isAnimating) updateLandingState();
 
-            if (!isAnimating) render();
-            if ((gravityEnabled || activePiece?.isLanded) && !isGameOver && !isAnimating && activePiece) {
+            if (activePiece && !isAnimating) {
+                const renderedProgress = !activePiece.isLanded && gravityEnabled
+                    ? Math.floor((activePiece.fallProgress || 0) / FALL_RENDER_STEP_CELLS) * FALL_RENDER_STEP_CELLS
+                    : 0;
+                if (movedCell || blockedStep || renderedProgress !== activePiece.lastRenderedFallProgress) {
+                    render(false, true);
+                }
+            }
+            if (gravityEnabled && !activePiece?.isLanded && !isGameOver && !isAnimating && activePiece) {
                 gravityRAF = requestAnimationFrame(gravityLoop);
             } else {
                 gravityRAF = null;
@@ -656,7 +663,7 @@
 
         function startGravity() {
             stopGravity();
-            if (!isPaused && (gravityEnabled || activePiece?.isLanded) && !isGameOver && !isAnimating && activePiece) {
+            if (!isPaused && gravityEnabled && !activePiece?.isLanded && !isGameOver && !isAnimating && activePiece) {
                 lastTime = null;
                 gravityRAF = requestAnimationFrame(gravityLoop);
             }
@@ -703,6 +710,7 @@
                 updateGravityControl();
                 historyStack = []; unconnectedIds.clear(); isAnimating = false; isDropping = false; initGrid(); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects(); updateStatsUI(); updateUndoBtn();
                 updatePupilDirections();
+                if (activePiece) updateLandingState();
                 if (isGameOver) { document.getElementById('gameOverMask').classList.remove('hidden'); } else { document.getElementById('gameOverMask').classList.add('hidden'); if (!activePiece) spawnPiece(); }
                 render(); return true;
             } catch (e) { return false; }
@@ -1019,6 +1027,7 @@
 
         function startGame() {
             gameSessionId++;
+            cancelLockDelay();
             clearQueueAdvanceAnimation();
             initBoard(); document.getElementById('puyoLayer').innerHTML = ''; clearPuyoBurstEffects();
             puyoQueue = []; historyStack = []; unconnectedIds.clear(); isGameOver = false; isAnimating = false; isDropping = false; lastRotateFailedState = null;
@@ -1081,7 +1090,7 @@
             refillQueue();
             lastRotateFailedState = null;
             activePiece = { x: 2, y: 1, rot: 0, angle: 0, fallProgress: 0, isLanded: false, isLanding: false, landedAt: null, landingAnimationToken: 0, main: { color: next.main, id: nextPuyoId++ }, sub: { color: next.sub, id: nextPuyoId++ } };
-            if (board[activePiece.y][activePiece.x] !== null) { isGameOver = true; activePiece = null; document.getElementById('gameOverMask').classList.remove('hidden'); } else { startGravity(); }
+            if (board[activePiece.y][activePiece.x] !== null) { isGameOver = true; activePiece = null; document.getElementById('gameOverMask').classList.remove('hidden'); } else { updateLandingState(); startGravity(); }
             saveResumeData();
         }
 
@@ -1185,15 +1194,40 @@
                 sleep(300).then(() => {
                     if (activePiece?.main.id === pieceId && activePiece.landingAnimationToken === animationToken) {
                         activePiece.isLanding = false;
-                        render();
+                        render(false, true);
                     }
                 });
                 triggerVibration(20);
-            } else if (!isGrounded) {
+            }
+            if (isGrounded) {
+                if (lockDelayPieceId !== activePiece.main.id) {
+                    scheduleLockDelay(activePiece, Math.max(0, LOCK_DELAY_MS - (now - activePiece.landedAt)));
+                }
+            } else if (activePiece.isLanded) {
+                cancelLockDelay();
                 activePiece.isLanded = false;
                 activePiece.landedAt = null;
                 activePiece.isLanding = false;
             }
+        }
+
+        function cancelLockDelay() {
+            lockDelayToken++;
+            lockDelayPieceId = null;
+        }
+
+        function scheduleLockDelay(piece, delay) {
+            const pieceId = piece.main.id;
+            const sessionId = gameSessionId;
+            const token = ++lockDelayToken;
+            lockDelayPieceId = pieceId;
+            sleep(delay).then(() => {
+                if (token !== lockDelayToken || sessionId !== gameSessionId || activePiece?.main.id !== pieceId || !activePiece.isLanded) return;
+                lockDelayPieceId = null;
+                const remaining = LOCK_DELAY_MS - (Date.now() - activePiece.landedAt);
+                if (remaining > 0) scheduleLockDelay(activePiece, remaining);
+                else lockPieceIfReady();
+            });
         }
 
         function lockPieceIfReady(now = Date.now()) {
@@ -1203,7 +1237,7 @@
         }
 
         function ensureGravityRunning() {
-            if ((gravityEnabled || activePiece?.isLanded) && !gravityRAF && !isGameOver && !isAnimating && activePiece) {
+            if (gravityEnabled && !activePiece?.isLanded && !gravityRAF && !isGameOver && !isAnimating && activePiece) {
                 lastTime = null;
                 gravityRAF = requestAnimationFrame(gravityLoop);
             }
@@ -1271,6 +1305,7 @@
         function undo() {
             if (isPaused || historyStack.length === 0) return;
             gameSessionId++;
+            cancelLockDelay();
             stopGravity();
             isAnimating = false;
             isDropping = false;
@@ -1289,6 +1324,7 @@
                 activePiece.isLanded = false;
                 activePiece.isLanding = false;
                 activePiece.landedAt = null;
+                updateLandingState();
             }
 
             unconnectedIds.clear(); isGameOver = false; lastRotateFailedState = null;
@@ -1330,6 +1366,7 @@
         async function lockPiece(animateLanding = false, isAlreadyAnimating = false, stateIsSaved = false) {
             if ((isAnimating && !isAlreadyAnimating) || isGameOver || !activePiece) return;
             const sessionId = gameSessionId;
+            cancelLockDelay();
             isAnimating = true; stopGravity(); if (!stateIsSaved) saveState();
             stepCount++;
             updateStatsUI();
@@ -1559,10 +1596,10 @@
             document.getElementById('maxChainDisp').innerText = maxChainCount;
         }
 
-        function render(isFalling = false) {
+        function render(isFalling = false, activeOnly = false) {
             const layer = document.getElementById('puyoLayer'); const currentIds = new Set();
-            const gridCells = document.getElementById('gridBg').children;
-            for (let y = 0; y < ROWS; y++) {
+            const gridCells = activeOnly ? null : document.getElementById('gridBg').children;
+            if (!activeOnly) for (let y = 0; y < ROWS; y++) {
                 for (let x = 0; x < COLS; x++) {
                     const cell = board[y][x];
                     gridCells[y * COLS + x].className = 'grid-cell';
@@ -1647,14 +1684,15 @@
                 let activeConnMain = { t:0, r:0, b:0, l:0 }, activeConnSub = { t:0, r:0, b:0, l:0 };
                 
                 let fp = 0;
-                if (!isAnimating && gravityEnabled) {
+                if (!isAnimating && gravityEnabled && !activePiece.isLanded) {
                     fp = activePiece.fallProgress || 0;
-                    if (!canPlacePiece({ ...activePiece, y: activePiece.y + 1 })) fp = 0; 
                 }
                 const renderedFallProgress = Math.floor(fp / FALL_RENDER_STEP_CELLS) * FALL_RENDER_STEP_CELLS;
+                activePiece.lastRenderedFallProgress = renderedFallProgress;
 
-                if (!isAnimating) {
+                if (!isAnimating && !activeOnly) {
                     let ghostDrop = 0; while (true) { let test = { ...activePiece, y: activePiece.y + ghostDrop + 1 }; if (canPlacePiece(test)) ghostDrop++; else break; }
+                    activePiece.ghostY = activePiece.y + ghostDrop;
                     const gMainId = 'ghost-main', gSubId = 'ghost-sub'; currentIds.add(gMainId); currentIds.add(gSubId);
                     let gMain = document.getElementById(gMainId); if (!gMain) { gMain = document.createElement('div'); gMain.id = gMainId; gMain.className = 'puyo-item ghost'; layer.appendChild(gMain); }
                     let gMainConnStr = `${activeConnMain.t}${activeConnMain.r}${activeConnMain.b}${activeConnMain.l}`; if (gMain.getAttribute('data-conn') !== gMainConnStr) { gMain.innerHTML = createPuyoSVG(activePiece.main.color, true, activeConnMain); gMain.setAttribute('data-conn', gMainConnStr); }
@@ -1662,6 +1700,16 @@
                     let gSubConnStr = `${activeConnSub.t}${activeConnSub.r}${activeConnSub.b}${activeConnSub.l}`; if (gSub.getAttribute('data-conn') !== gSubConnStr) { gSub.innerHTML = createPuyoSVG(activePiece.sub.color, true, activeConnSub); gSub.setAttribute('data-conn', gSubConnStr); }
                     gMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`; gMain.style.top = `calc(var(--cell-size) * ${activePiece.y + ghostDrop})`; gMain.style.transform = 'none';
                     gSub.style.left = `calc(var(--cell-size) * ${activePiece.x})`; gSub.style.top = `calc(var(--cell-size) * ${activePiece.y + ghostDrop})`; gSub.style.transform = `rotate(${activePiece.angle}deg) translateY(-100%) rotate(${-activePiece.angle}deg)`;
+                } else if (!isAnimating && activeOnly) {
+                    const gMain = document.getElementById('ghost-main'), gSub = document.getElementById('ghost-sub');
+                    if (gMain && gSub && Number.isInteger(activePiece.ghostY)) {
+                        const ghostLeft = `calc(var(--cell-size) * ${activePiece.x})`;
+                        const ghostTop = `calc(var(--cell-size) * ${activePiece.ghostY})`;
+                        if (gMain.style.left !== ghostLeft) gMain.style.left = ghostLeft;
+                        if (gMain.style.top !== ghostTop) gMain.style.top = ghostTop;
+                        if (gSub.style.left !== ghostLeft) gSub.style.left = ghostLeft;
+                        if (gSub.style.top !== ghostTop) gSub.style.top = ghostTop;
+                    }
                 }
 
                 const aMainDomId = 'puyo-' + activePiece.main.id, aSubDomId = 'puyo-' + activePiece.sub.id; currentIds.add(aMainDomId); currentIds.add(aSubDomId);
@@ -1674,16 +1722,22 @@
                 const activeClass = ' active-puyo';
                 const landingClass = activePiece.isLanding ? ' puyo-landing' : '';
                 const landedClass = activePiece.isLanded && !activePiece.isLanding ? ' puyo-landed' : '';
-                aMain.className = 'puyo-item' + axisClass + activeClass + landingClass + landedClass + (isFalling ? ' falling' : ''); 
-                aSub.className = 'puyo-item active-sub-puyo' + activeClass + landingClass + landedClass + (isFalling ? ' falling' : '');
-                
-                aMain.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aMain.style.top = `calc(var(--cell-size) * ${activePiece.y + renderedFallProgress})`; aMain.style.transform = 'none';
-                aSub.style.left = `calc(var(--cell-size) * ${activePiece.x})`; aSub.style.top = `calc(var(--cell-size) * ${activePiece.y + renderedFallProgress})`; 
-                aSub.style.transform = `rotate(${activePiece.angle}deg) translateY(-100%) rotate(${-activePiece.angle}deg)`;
+                const activeLeft = `calc(var(--cell-size) * ${activePiece.x})`;
+                const activeTop = `calc(var(--cell-size) * ${activePiece.y + renderedFallProgress})`;
+                const activeTransform = `rotate(${activePiece.angle}deg) translateY(-100%) rotate(${-activePiece.angle}deg)`;
+                if (aMain.className !== 'puyo-item' + axisClass + activeClass + landingClass + landedClass + (isFalling ? ' falling' : '')) aMain.className = 'puyo-item' + axisClass + activeClass + landingClass + landedClass + (isFalling ? ' falling' : '');
+                const subClass = 'puyo-item active-sub-puyo' + activeClass + landingClass + landedClass + (isFalling ? ' falling' : '');
+                if (aSub.className !== subClass) aSub.className = subClass;
+                if (aMain.style.left !== activeLeft) aMain.style.left = activeLeft;
+                if (aMain.style.top !== activeTop) aMain.style.top = activeTop;
+                if (aMain.style.transform !== 'none') aMain.style.transform = 'none';
+                if (aSub.style.left !== activeLeft) aSub.style.left = activeLeft;
+                if (aSub.style.top !== activeTop) aSub.style.top = activeTop;
+                if (aSub.style.transform !== activeTransform) aSub.style.transform = activeTransform;
             }
 
-            Array.from(layer.children).forEach(el => { if (!el.classList.contains('chain-num-popup') && !el.classList.contains('all-clear-popup') && !el.classList.contains('puyo-burst-fragments') && !currentIds.has(el.id)) el.remove(); });
-            if (puyoQueue.length >= 2) {
+            if (!activeOnly) Array.from(layer.children).forEach(el => { if (!el.classList.contains('chain-num-popup') && !el.classList.contains('all-clear-popup') && !el.classList.contains('puyo-burst-fragments') && !currentIds.has(el.id)) el.remove(); });
+            if (!activeOnly && puyoQueue.length >= 2) {
                 const updateNext = (id, color, conn) => { let el = document.getElementById(id); let stateStr = `${color}_${conn.t}${conn.r}${conn.b}${conn.l}`; if (el.getAttribute('data-state') !== stateStr) { el.innerHTML = createPuyoSVG(color, false, conn); el.setAttribute('data-state', stateStr); } };
                 const updatePair = (pairId, mainId, subId, piece) => {
                     const pair = document.getElementById(pairId);
@@ -1694,7 +1748,7 @@
                 updatePair('next1Pair', 'next1Main', 'next1Sub', puyoQueue[0]);
                 updatePair('next2Pair', 'next2Main', 'next2Sub', puyoQueue[1]);
             }
-            completeQueueAdvance();
+            if (!activeOnly) completeQueueAdvance();
         }
 
         let touchStartX = 0, touchStartY = 0, touchLastX = 0, touchStartTime = 0, isGameGesture = false, hasSwiped = false;
